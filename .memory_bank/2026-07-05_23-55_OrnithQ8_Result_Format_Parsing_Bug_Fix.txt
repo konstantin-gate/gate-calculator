@@ -1,0 +1,1004 @@
+============================================================================
+ПЛАН ИСПРАВЛЕНИЯ: ОШИБКА ФОРМАТИРОВАНИЯ РЕЗУЛЬТАТА ПРИ ПРОДОЛЖЕНИИ ВЫЧИСЛЕНИЙ
+============================================================================
+
+Дата: 2026-07-06
+Агент: OrnithQ8
+Задача: Исправить критическую ошибку, при которой результат вычисления
+        с разделителем тысяч (например "1,233") ошибочно интерпретируется
+        как десятичное число (1.233) при продолжении вычислений.
+
+============================================================================
+ЧАСТЬ 1: ГЛУБОКИЙ АНАЛИЗ ПРОБЛЕМЫ
+============================================================================
+
+--- 1.1. Описание симптома ---
+
+Пользователь вводит: `1234-1`
+Ожидаемый результат: 1233
+Фактический результат на экране: "1,233" (разделитель тысяч)
+
+Пользователь продолжает: `*10`
+Ожидаемый результат: 12330
+Фактический результат на экране: "12.33"
+
+--- 1.2. Цепочка событий (пошагово) ---
+
+ШАГ 1: Пользователь вводит "1234-1"
+  - CalculatorViewModel.appendCharacter("1") вызывается для каждой цифры
+  - expression = "1234-1"
+  - appendCharacter вызывает tryAutoEvaluate() после добавления "1" (последняя цифра)
+  - tryAutoEvaluate() вызывает engine.evaluate("1234-1")
+  - CalculatorEngine вычисляет: 1234 - 1 = 1233 (Decimal)
+  - formatter.format(1233) возвращает "1,233" (locale en_US: , = разделитель тысяч)
+  - result = "1,233"
+  - expression = "" (не сбрасывается в tryAutoEvaluate — только в evaluate())
+
+ШАГ 2: Пользователь видит "1,233" на экране и вводит "*"
+  - CalculatorViewModel.appendCharacter("*")
+  - hasResult = true (result = "1,233" != nil)
+  - isOperator("*") = true
+  - Выполняется ветка: "hasResult && isOperator(char)"
+
+ШАГ 3: Парсинг result обратно в Decimal (ПРОБЛЕМА ЗДЕСЬ)
+  - res = "1,233"
+  - res.replacingOccurrences(of: ",", with: ".") → "1.233"
+  - Decimal(string: "1.233") → 1.233 (Decimal! Это ОШИБКА: должно быть 1233)
+  - expression = dec.description → "1.233"
+  - result = nil
+
+ШАГ 4: Продолжение ввода
+  - expression += "*" → expression = "1.233*"
+  - Пользователь вводит "1" → expression = "1.233*1"
+  - Пользователь вводит "0" → expression = "1.233*10"
+  - tryAutoEvaluate() вычисляет: 1.233 * 10 = 12.33
+  - result = formatter.format(12.33) → "12.33"
+
+--- 1.3. Корневая причина ---
+
+В CalculatorViewModel свойство `result` хранит ФОРМАТИРОВАННУЮ строку
+(например, "1,233"). При продолжении вычислений ViewModel извлекает эту
+строку и пытается распарсить её обратно в Decimal, заменяя запятые на точки.
+
+Проблема: форматирование использует locale en_US, где:
+  - "," (запятая) = разделитель тысяч (thousands separator)
+  - "." (точка) = десятичный разделитель (decimal separator)
+
+При замене "," → "." строка "1,233" превращается в "1.233", что Decimal
+интерпретирует как ОДНУ ЦЕЛУЮ ДВЕСОТ ТРИДЦАТЬ ТРИ THЯСЯЧНЫХ,
+а не как одну тысячу двести тридцать три.
+
+--- 1.4. Все места в коде, затронутые проблемой ---
+
+Файл: Sources/ViewModels/CalculatorViewModel.swift
+
+1. Свойство `result` (строка) — источник проблемы:
+   - Хранит форматированную строку вместо неформатированного Decimal
+   - Используется для отображения в UI (DisplayView)
+   - Используется для парсинга обратно при продолжении вычислений
+
+2. Метод `appendCharacter` (строки 28-47):
+   - Строка 31: `if hasResult && !isOperator(char)` — проверка наличия результата
+   - Строка 34: `if hasResult && isOperator(char)` — ветвление при операторе
+   - Строка 37: `Decimal(string: res.replacingOccurrences(of: ",", with: "."))` —
+                КРИТИЧЕСКАЯ ОШИБКА: парсинг форматированной строки
+   - Строка 38: `expression = dec.description` — установка expression из Decimal
+
+3. Метод `appendOperator` (строки 50-63):
+   - Строка 55: аналогичная ошибка парсинга форматированной строки
+   - Строка 56: `expression = dec.description + op`
+
+4. Метод `toggleSign` (строки 108-124):
+   - Строка 111: `Decimal(string: result.replacingOccurrences(of: ",", with: "."))`
+   - Аналогичная ошибка парсинга форматированной строки
+
+5. Метод `memoryAdd` (строки 132-136):
+   - Строка 134: `Decimal(string: result.replacingOccurrences(of: ",", with: "."))`
+   - Аналогичная ошибка парсинга форматированной строки
+
+6. Метод `memorySubtract` (строки 138-142):
+   - Строка 140: `Decimal(string: result.replacingOccurrences(of: ",", with: "."))`
+   - Аналогичная ошибка парсинга форматированной строки
+
+7. Метод `evaluate` (строки 65-83):
+   - Строка 73: `result = formatter.format(value)` — установка форматированной строки
+   - Здесь result устанавливается как отформатированная строка
+
+8. Метод `tryAutoEvaluate` (строки 205-215):
+   - Строка 211: `result = formatter.format(value)` — установка форматированной строки
+   - Аналогичная проблема
+
+9. Свойство `hasResult` (строка 18):
+   - `var hasResult: Bool { result != nil }` — зависит от строкового result
+
+10. Метод `backspace` (строки 91-105):
+    - Строка 94: `if expression.isEmpty, let _ = result` — проверка наличия результата
+    - Строка 102: `else if hasResult` — проверка через computed property
+
+Файл: Sources/Views/CalculatorView.swift
+11. Свойство `isAC` (строки 16-18):
+    - `private var isAC: Bool { viewModel.expression.isEmpty && viewModel.result == nil }`
+    - Зависит от result для определения состояния кнопки Clear
+
+Файл: Sources/Views/DisplayView.swift
+12. Использует `viewModel.result` для отображения (строка 58):
+    - `let mainText = result ?? (expression.isEmpty ? "0" : expression)`
+    - Это корректно — result используется только для отображения
+
+Файл: Sources/Views/CalculatorView.swift
+13. Передаёт `viewModel.result` в DisplayView (строка 24):
+    - `result: viewModel.result` — корректно для отображения
+
+============================================================================
+ЧАСТЬ 2: АРХИТЕКТУРНОЕ РЕШЕНИЕ
+============================================================================
+
+--- 2.1. Принцип решения ---
+
+Добавить в CalculatorViewModel новое свойство `resultDecimal: Decimal?`,
+которое будет хранить НЕФОРМАТИРОВАННЫЙ результат вычисления.
+
+Все места, где `result` (строка) используется для парсинга обратно в Decimal,
+будут использовать `resultDecimal` напрямую.
+
+Свойство `result: String?` останется только для отображения в UI.
+
+--- 2.2. Почему это единственное верное решение ---
+
+1. Разделение ответственности (Separation of Concerns):
+   - `resultDecimal` — source of truth для вычислений (неформатированный Decimal)
+   - `result` — только для отображения (отформатированная строка)
+   - Форматирование → парсинг обратно — это всегда потенциальная потеря данных
+
+2. Locale-независимость:
+   - Decimal не зависит от locale
+   - Форматированная строка зависит от locale (разделители)
+   - Хранение Decimal устраняет любую зависимость от формата
+
+3. Производительность:
+   - Устраняется необходимость парсинга строки обратно в Decimal
+   - Decimal используется напрямую — быстрее и надёжнее
+
+4. Корректность:
+   - Нет потери точности при конвертации строка → Decimal → строка
+   - Числа типа 1233 остаются 1233, а не превращаются в 1.233
+
+--- 2.3. Что НЕ меняется ---
+
+- CalculatorEngine: не изменяется (работает корректно)
+- NumberFormatterService: не изменяется (форматирует корректно)
+- DisplayView: не изменяется (получает result для отображения)
+- CalculatorView.isAC: обновляется на проверку resultDecimal
+- HistoryService: не изменяется (уже хранит Decimal)
+
+============================================================================
+ЧАСТЬ 3: ДЕТАЛИРОВАННЫЙ ПЛАН РЕАЛИЗАЦИИ
+============================================================================
+
+--- 3.1. Файл: Sources/ViewModels/CalculatorViewModel.swift ---
+
+ОПЕРАЦИЯ 1: Добавить новое свойство resultDecimal
+
+Добавить после свойства `var result: String? = nil` (строка 11):
+
+    var resultDecimal: Decimal? = nil
+
+Это свойство будет хранить неформатированный результат вычисления.
+Оно используется ТОЛЬКО внутри ViewModel для продолжения вычислений.
+
+---
+
+ОПЕРАЦИЯ 2: Обновить свойство hasResult
+
+Было (строка 18):
+    var hasResult: Bool { result != nil }
+
+Станет:
+    var hasResult: Bool { resultDecimal != nil }
+
+Обоснование: hasResult должен отражать наличие вычисленного результата,
+а не наличие отформатированной строки. resultDecimal — это source of truth.
+
+---
+
+ОПЕРАЦИЯ 3: Обновить метод appendCharacter (строки 28-47)
+
+Было:
+    func appendCharacter(_ char: String) {
+        clearError()
+
+        if hasResult && !isOperator(char) {
+            expression = ""
+            result = nil
+        } else if hasResult && isOperator(char) {
+            if let res = result, let dec = Decimal(string: res.replacingOccurrences(of: ",", with: ".")) {
+                expression = dec.description
+            }
+            result = nil
+        }
+
+        expression += char
+        if !isDigitOrDecimal(char) {
+            tryAutoEvaluate()
+        }
+    }
+
+Станет:
+    func appendCharacter(_ char: String) {
+        clearError()
+
+        if hasResult && !isOperator(char) {
+            expression = ""
+            resultDecimal = nil
+        } else if hasResult && isOperator(char) {
+            if let dec = resultDecimal {
+                expression = dec.description
+            }
+            resultDecimal = nil
+        }
+
+        expression += char
+        if !isDigitOrDecimal(char) {
+            tryAutoEvaluate()
+        }
+    }
+
+Изменения:
+  - Строка 32: `result = nil` → `resultDecimal = nil`
+  - Строки 35-38: вместо парсинга форматированной строки — прямое использование
+    resultDecimal. Удалена вся логика replacingOccurrences и Decimal(string:).
+
+---
+
+ОПЕРАЦИЯ 4: Обновить метод appendOperator (строки 50-63)
+
+Было:
+    func appendOperator(_ op: String) {
+        clearError()
+
+        if hasResult {
+            if let res = result, let dec = Decimal(string: res.replacingOccurrences(of: ",", with: ".")) {
+                expression = dec.description + op
+            }
+            result = nil
+        } else {
+            expression += op
+        }
+        result = nil
+    }
+
+Станет:
+    func appendOperator(_ op: String) {
+        clearError()
+
+        if hasResult {
+            if let dec = resultDecimal {
+                expression = dec.description + op
+            }
+            resultDecimal = nil
+        } else {
+            expression += op
+        }
+        result = nil
+    }
+
+Изменения:
+  - Строка 55-56: вместо парсинга форматированной строки — прямое использование
+    resultDecimal. Удалена вся логика replacingOccurrences и Decimal(string:).
+  - Строка 58: `result = nil` → `resultDecimal = nil`
+
+---
+
+ОПЕРАЦИЯ 5: Обновить метод evaluate (строки 65-83)
+
+Было:
+    func evaluate() {
+        clearError()
+
+        let trimmed = expression.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+
+        do {
+            let value = try engine.evaluate(expression)
+            let formatted = formatter.format(value)
+
+            historyService.add(expression: expression, result: value)
+
+            result = formatted
+            expression = ""
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+Станет:
+    func evaluate() {
+        clearError()
+
+        let trimmed = expression.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+
+        do {
+            let value = try engine.evaluate(expression)
+            let formatted = formatter.format(value)
+
+            historyService.add(expression: expression, result: value)
+
+            result = formatted
+            resultDecimal = value
+            expression = ""
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+Изменения:
+  - Строка 77 (после `result = formatted`): добавить `resultDecimal = value`
+  - value — это Decimal из engine.evaluate, без форматирования
+
+---
+
+ОПЕРАЦИЯ 6: Обновить метод tryAutoEvaluate (строки 205-215)
+
+Было:
+    private func tryAutoEvaluate() {
+        let trimmed = expression.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, !isTrailingOperator(expression) else { return }
+
+        do {
+            let value = try engine.evaluate(expression)
+            result = formatter.format(value)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+Станет:
+    private func tryAutoEvaluate() {
+        let trimmed = expression.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, !isTrailingOperator(expression) else { return }
+
+        do {
+            let value = try engine.evaluate(expression)
+            result = formatter.format(value)
+            resultDecimal = value
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+Изменения:
+  - После `result = formatter.format(value)`: добавить `resultDecimal = value`
+
+---
+
+ОПЕРАЦИЯ 7: Обновить метод backspace (строки 91-105)
+
+Было:
+    func backspace() {
+        clearError()
+
+        if expression.isEmpty, let _ = result {
+            clear()
+            return
+        }
+
+        if !expression.isEmpty {
+            expression.removeLast()
+            tryAutoEvaluate()
+        } else if hasResult {
+            clear()
+        }
+    }
+
+Станет:
+    func backspace() {
+        clearError()
+
+        if expression.isEmpty, resultDecimal != nil {
+            clear()
+            return
+        }
+
+        if !expression.isEmpty {
+            expression.removeLast()
+            tryAutoEvaluate()
+        } else if hasResult {
+            clear()
+        }
+    }
+
+Изменения:
+  - Строка 94: `let _ = result` → `resultDecimal != nil`
+  - hasResult уже обновлён в Операции 2
+
+---
+
+ОПЕРАЦИЯ 8: Обновить метод toggleSign (строки 108-124)
+
+Было:
+    func toggleSign() {
+        if expression.isEmpty {
+            if let result, let val = Decimal(string: result.replacingOccurrences(of: ",", with: ".")) {
+                let negated = -val
+                expression = negated.description
+                self.result = nil
+            }
+        } else {
+            if expression.hasPrefix("-") {
+                expression = String(expression.dropFirst())
+            } else {
+                expression = "-(\(expression))"
+            }
+        }
+        errorMessage = nil
+    }
+
+Станет:
+    func toggleSign() {
+        if expression.isEmpty {
+            if let val = resultDecimal {
+                let negated = -val
+                expression = negated.description
+                self.resultDecimal = nil
+            }
+        } else {
+            if expression.hasPrefix("-") {
+                expression = String(expression.dropFirst())
+            } else {
+                expression = "-(\(expression))"
+            }
+        }
+        errorMessage = nil
+    }
+
+Изменения:
+  - Строка 111: вместо парсинга форматированной строки — прямое использование
+    resultDecimal. Удалена вся логика replacingOccurrences и Decimal(string:).
+  - Строка 113: `self.result = nil` → `self.resultDecimal = nil`
+
+---
+
+ОПЕРАЦИЯ 9: Обновить метод memoryAdd (строки 132-136)
+
+Было:
+    func memoryAdd() {
+        guard let result, let val = Decimal(string: result.replacingOccurrences(of: ",", with: ".")) else { return }
+        memoryValue += val
+    }
+
+Станет:
+    func memoryAdd() {
+        guard let val = resultDecimal else { return }
+        memoryValue += val
+    }
+
+Изменения:
+  - Удалена вся логика replacingOccurrences и Decimal(string:)
+  - resultDecimal используется напрямую
+
+---
+
+ОПЕРАЦИЯ 10: Обновить метод memorySubtract (строки 138-142)
+
+Было:
+    func memorySubtract() {
+        guard let result, let val = Decimal(string: result.replacingOccurrences(of: ",", with: ".")) else { return }
+        memoryValue -= val
+    }
+
+Станет:
+    func memorySubtract() {
+        guard let val = resultDecimal else { return }
+        memoryValue -= val
+    }
+
+Изменения:
+  - Удалена вся логика replacingOccurrences и Decimal(string:)
+  - resultDecimal используется напрямую
+
+---
+
+ОПЕРАЦИЯ 11: Обновить метод clear (строки 85-89)
+
+Было:
+    func clear() {
+        expression = ""
+        result = nil
+        errorMessage = nil
+    }
+
+Станет:
+    func clear() {
+        expression = ""
+        result = nil
+        resultDecimal = nil
+        errorMessage = nil
+    }
+
+Изменения:
+  - Добавить `resultDecimal = nil` для синхронного сброса обоих свойств
+
+============================================================================
+ЧАСТЬ 4: ИЗМЕНЕНИЯ В OTHER FILES
+============================================================================
+
+--- 4.1. Файл: Sources/Views/CalculatorView.swift ---
+
+ОПЕРАЦИЯ 12: Обновить свойство isAC (строки 16-18)
+
+Было:
+    private var isAC: Bool {
+        viewModel.expression.isEmpty && viewModel.result == nil
+    }
+
+Станет:
+    private var isAC: Bool {
+        viewModel.expression.isEmpty && viewModel.resultDecimal == nil
+    }
+
+Обоснование: isAC определяет, показывать "AC" (полная очистка) или "C"
+(очистка ввода). Состояние должно определяться наличием вычисленного результата,
+а не отформатированной строки.
+
+--- 4.2. Файл: Sources/Views/DisplayView.swift ---
+
+НЕ ИЗМЕНЯЕТСЯ. DisplayView получает `result: String?` для отображения,
+что корректно. resultDecimal не нужен в UI — он используется только
+для внутренних вычислений ViewModel.
+
+--- 4.3. Файл: Sources/CalculatorEngine/ ---
+
+НЕ ИЗМЕНЯЕТСЯ. CalculatorEngine, Tokenizer, Parser, Evaluator, AST —
+не затрагиваются. Движок работает корректно и возвращает Decimal.
+
+--- 4.4. Файл: Sources/Formatting/NumberFormatterService.swift ---
+
+НЕ ИЗМЕНЯЕТСЯ. NumberFormatterService корректно форматирует Decimal
+в строку с разделителями тысяч.
+
+--- 4.5. Файл: Sources/Services/HistoryService.swift ---
+
+НЕ ИЗМЕНЯЕТСЯ. HistoryService уже хранит Decimal в HistoryEntry.result.
+
+--- 4.6. Файл: Sources/Clipboard/ClipboardManager.swift ---
+
+НЕ ИЗМЕНЯЕТСЯ. ClipboardManager не затрагивается.
+
+--- 4.7. Файл: Sources/Theme/CalculatorColors.swift ---
+
+НЕ ИЗМЕНЯЕТСЯ. CalculatorColors не затрагивается.
+
+--- 4.8. Файл: Sources/History/HistoryEntry.swift ---
+
+НЕ ИЗМЕНЯЕТСЯ. HistoryEntry.result уже является Decimal.
+
+--- 4.9. Файл: Sources/App/CalculatorApp.swift ---
+
+НЕ ИЗМЕНЯЕТСЯ. KeyHandlerNSView не использует result напрямую.
+
+============================================================================
+ЧАСТЬ 5: ПРОВЕРКА ВСЕХ УТВЕРЖДЕНИЙ
+============================================================================
+
+УТВЕРЖДЕНИЕ 1: resultDecimal будет доступен во всех методах ViewModel
+ПОДТВЕРЖДЕНО: resultDecimal — свойство класса CalculatorViewModel,
+доступно во всех методах экземпляра.
+
+УТВЕРЖДЕНИЕ 2: formatter.format(value) вернёт "1,233" для Decimal(1233)
+ПОДТВЕРЖДЕНО: NumberFormatterService.init() устанавливает:
+  - locale = "en_US"
+  - groupingSeparator = ","
+  - decimalSeparator = "."
+  Decimal(1233) → "1,233" (разделитель тысяч)
+
+УТВЕРЖДЕНИЕ 3: Decimal.description для 1233 вернёт "1233"
+ПОДТВЕРЖДЕНО: Decimal.description возвращает строковое представление
+без разделителей тысяч, с точкой как десятичным разделителем.
+
+УТВЕРЖДЕНИЕ 4: hasResult будет true после evaluate() и tryAutoEvaluate()
+ПОДТВЕРЖДЕНО: Оба метода устанавливают resultDecimal = value (Decimal),
+что делает hasResult (resultDecimal != nil) равным true.
+
+УТВЕРЖДЕНИЕ 5: appendCharacter сбросит resultDecimal при вводе оператора
+ПОДТВЕРЖДЕНО: Ветка `hasResult && isOperator(char)` устанавливает
+resultDecimal = nil перед добавлением оператора в expression.
+
+УТВЕРЖДЕНИЕ 6: appendCharacter сбросит resultDecimal при вводе цифры
+ПОДТВЕРЖДЕНО: Ветка `hasResult && !isOperator(char)` устанавливает
+resultDecimal = nil и expression = "" перед началом нового ввода.
+
+УТВЕРЖДЕНИЕ 7: clear() сбросит resultDecimal
+ПОДТВЕРЖДЕНО: Обновлённый clear() устанавливает resultDecimal = nil.
+
+УТВЕРЖДЕНИЕ 8: backspace() корректно определит наличие результата
+ПОДТВЕРЖДЕНО: Условие `resultDecimal != nil` проверяет наличие
+неформатированного результата.
+
+УТВЕРЖДЕНИЕ 9: toggleSign() корректно инвертирует результат
+ПОДТВЕРЖДЕНО: resultDecimal используется напрямую, без парсинга строки.
+-negated = -val работает корректно для Decimal.
+
+УТВЕРЖДЕНИЕ 10: memoryAdd() и memorySubtract() корректно работают
+ПОДТВЕРЖДЕНО: resultDecimal используется напрямую, без парсинга строки.
+
+УТВЕРЖДЕНИЕ 11: DisplayView продолжит корректно отображать результат
+ПОДТВЕРЖДЕНО: result (String?) по-прежнему устанавливается в evaluate()
+и tryAutoEvaluate(). DisplayView получает отформатированную строку.
+
+УТВЕРЖДЕНИЕ 12: CalculatorView.isAC корректно определит состояние кнопки
+ПОДТВЕРЖДЕНО: resultDecimal == nil означает отсутствие результата,
+что соответствует состоянию "AC" (полная очистка).
+
+УТВЕРЖДЕНИЕ 13: @Observable обеспечит обновление UI при изменении resultDecimal
+ПОДТВЕРЖДЕНО: CalculatorViewModel аннотирован @Observable. При изменении
+resultDecimal SwiftUI автоматически обновит связанные представления.
+
+УТВЕРЖДЕНИЕ 14: @Bindable обеспечит двустороннюю привязку resultDecimal
+ПОДТВЕРЖДЕНО: CalculatorContentView использует @Bindable var viewModel,
+что обеспечивает двустороннюю привязку всех свойств ViewModel.
+
+УТВЕРЖДЕНИЕ 15: resultDecimal не повлияет на HistoryService
+ПОДТВЕРЖДЕНО: HistoryService.add(expression:result:) принимает Decimal,
+и value передаётся напрямую из engine.evaluate() без изменений.
+
+УТВЕРЖДЕНИЕ 16: resultDecimal не повлияет на ClipboardManager
+ПОДТВЕРЖДЕНО: copyResult() копирует result (String?), который остаётся
+отформатированной строкой.
+
+УТВЕРЖДЕНИЕ 17: resultDecimal не повлияет на insertFromClipboard
+ПОДТВЕРЖДЕНО: insertFromClipboard устанавливает result и resultDecimal,
+но не использует resultDecimal для каких-либо операций.
+
+УТВЕРЖДЕНИЕ 18: useHistoryEntry корректно работает с resultDecimal
+ПОДТВЕРЖДЕНО: useHistoryEntry устанавливает expression и result = nil,
+затем вызывает tryAutoEvaluate(), который установит resultDecimal.
+
+============================================================================
+ЧАСТЬ 6: ПОСЛЕДОВАТЕЛЬНОСТЬ ВЫПОЛНЕНИЯ (ШАГ ЗА ШАГОМ)
+============================================================================
+
+ШАГ 1: Отредактировать Sources/ViewModels/CalculatorViewModel.swift
+  - Операция 1: Добавить свойство resultDecimal после result (строка 12)
+  - Операция 2: Обновить hasResult (строка 18)
+  - Операция 3: Обновить appendCharacter (строки 28-47)
+  - Операция 4: Обновить appendOperator (строки 50-63)
+  - Операция 5: Обновить evaluate (строки 65-83)
+  - Операция 6: Обновить tryAutoEvaluate (строки 205-215)
+  - Операция 7: Обновить backspace (строки 91-105)
+  - Операция 8: Обновить toggleSign (строки 108-124)
+  - Операция 9: Обновить memoryAdd (строки 132-136)
+  - Операция 10: Обновить memorySubtract (строки 138-142)
+  - Операция 11: Обновить clear (строки 85-89)
+
+ШАГ 2: Отредактировать Sources/Views/CalculatorView.swift
+  - Операция 12: Обновить isAC (строки 16-18)
+
+ШАГ 3: Проверка сборки
+  - Запустить: swift build
+  - Убедиться, что нет ошибок компиляции
+
+ШАГ 4: Запуск тестов
+  - Запустить: swift test
+  - Убедиться, что все существующие тесты проходят
+
+ШАГ 5: Ручная проверка сценария
+  - Ввести "1234-1" → получить "1,233"
+  - Ввести "*10" → получить "12,330" (ожидаемо)
+  - Ввести "+5" → получить "12,335" (ожидаемо)
+
+============================================================================
+ЧАСТЬ 7: ОЖИДАЕМЫЙ РЕЗУЛЬТАТ ПОСЛЕ ИСПРАВЛЕНИЯ
+============================================================================
+
+Сценарий 1 (исходный баг):
+  Ввод: "1234-1" → результат на экране: "1,233"
+  Ввод: "*10" → expression = "1233*10", результат: "12,330" ✓
+
+Сценарий 2 (обычное вычисление):
+  Ввод: "100+200" → результат на экране: "300"
+  Ввод: "*2" → expression = "300*2", результат: "600" ✓
+
+Сценарий 3 (десятичные числа):
+  Ввод: "1.5+2.5" → результат на экране: "4"
+  Ввод: "*3" → expression = "4*3", результат: "12" ✓
+
+Сценарий 4 (большие числа):
+  Ввод: "1000000-1" → результат на экране: "999,999"
+  Ввод: "+1" → expression = "999999+1", результат: "1,000,000" ✓
+
+Сценарий 5 (memory):
+  Ввод: "1234-1" → результат: "1,233"
+  Нажать M+ → memoryValue = 1233 (Decimal) ✓
+  Ввести "*2" → expression = "1233*2", результат: "2,466" ✓
+
+Сценарий 6 (toggleSign):
+  Ввод: "1234-1" → результат: "1,233"
+  Нажать +/- → expression = "-1233", результат сброшен ✓
+
+============================================================================
+ЧАСТЬ 8: ЧТО БУДЕТ В ФАЙЛЕ ПОСЛЕ ИСПРАВЛЕНИЯ (CalculatorViewModel.swift)
+============================================================================
+
+Полный ожидаемый финальный вид файла:
+
+```swift
+import Foundation
+import SwiftUI
+import Observation
+import CalculatorEngine
+
+@MainActor
+@Observable
+final class CalculatorViewModel {
+
+    var expression: String = ""
+    var result: String? = nil
+    var resultDecimal: Decimal? = nil   // НОВОЕ: неформатированный результат
+    var errorMessage: String? = nil
+
+    private let engine = CalculatorEngine()
+    private let historyService = HistoryService.shared
+    private let formatter = NumberFormatterService.shared
+
+    var hasResult: Bool { resultDecimal != nil }   // ОБНОВЛЕНО
+    var historyCount: Int { historyService.count() }
+
+    /// Записи истории — единый computed property для HistoryPanelView
+    var historyEntries: [HistoryEntry] {
+        historyService.getEntries()
+    }
+
+    private var memoryValue: Decimal = 0
+
+    func appendCharacter(_ char: String) {
+        clearError()
+
+        if hasResult && !isOperator(char) {
+            expression = ""
+            resultDecimal = nil    // ОБНОВЛЕНО
+        } else if hasResult && isOperator(char) {
+            if let dec = resultDecimal {    // ОБНОВЛЕНО: прямое использование
+                expression = dec.description
+            }
+            resultDecimal = nil    // ОБНОВЛЕНО
+        }
+
+        expression += char
+        if !isDigitOrDecimal(char) {
+            tryAutoEvaluate()
+        }
+    }
+
+    func appendOperator(_ op: String) {
+        clearError()
+
+        if hasResult {
+            if let dec = resultDecimal {    // ОБНОВЛЕНО: прямое использование
+                expression = dec.description + op
+            }
+            resultDecimal = nil    // ОБНОВЛЕНО
+        } else {
+            expression += op
+        }
+        result = nil
+    }
+
+    func evaluate() {
+        clearError()
+
+        let trimmed = expression.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+
+        do {
+            let value = try engine.evaluate(expression)
+            let formatted = formatter.format(value)
+
+            historyService.add(expression: expression, result: value)
+
+            result = formatted
+            resultDecimal = value    // НОВОЕ
+            expression = ""
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func clear() {
+        expression = ""
+        result = nil
+        resultDecimal = nil    // НОВОЕ
+        errorMessage = nil
+    }
+
+    func backspace() {
+        clearError()
+
+        if expression.isEmpty, resultDecimal != nil {    // ОБНОВЛЕНО
+            clear()
+            return
+        }
+
+        if !expression.isEmpty {
+            expression.removeLast()
+            tryAutoEvaluate()
+        } else if hasResult {
+            clear()
+        }
+    }
+
+    func toggleSign() {
+        if expression.isEmpty {
+            if let val = resultDecimal {    // ОБНОВЛЕНО: прямое использование
+                let negated = -val
+                expression = negated.description
+                self.resultDecimal = nil    // ОБНОВЛЕНО
+            }
+        } else {
+            if expression.hasPrefix("-") {
+                expression = String(expression.dropFirst())
+            } else {
+                expression = "-(\(expression))"
+            }
+        }
+        errorMessage = nil
+    }
+
+    // MARK: - Memory operations (SRS §39-43)
+
+    func memoryClear() {
+        memoryValue = 0
+    }
+
+    func memoryAdd() {
+        guard let val = resultDecimal else { return }    // ОБНОВЛЕНО
+        memoryValue += val
+    }
+
+    func memorySubtract() {
+        guard let val = resultDecimal else { return }    // ОБНОВЛЕНО
+        memoryValue -= val
+    }
+
+    func memoryRecall() {
+        expression = memoryValue.description
+        result = nil
+        errorMessage = nil
+    }
+
+    func handleKeyCommand(_ key: String) {
+        switch key {
+        case "C", "\u{1B}":
+            clear()
+        case "\u{7F}", "\u{8}":
+            backspace()
+        case "\r", "\n", "=":
+            evaluate()
+        default:
+            if key.count == 1, let firstChar = key.first, firstChar.isNumber || "+-*/().%".contains(firstChar) {
+                appendCharacter(key)
+            }
+        }
+    }
+
+    // MARK: - Clipboard
+
+    func insertFromClipboard(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        clear()
+
+        if let value = try? engine.evaluate(trimmed) {
+            expression = trimmed
+            result = formatter.format(value)
+            resultDecimal = value    // НОВОЕ
+            historyService.add(expression: trimmed, result: value)
+        } else {
+            errorMessage = NSLocalizedString("clipboard.cannotEvaluate", comment: "")
+        }
+    }
+
+    func copyResult() {
+        if let result = result {
+            ClipboardManager.shared.setString(result)
+        }
+    }
+
+    // MARK: - History
+
+    func useHistoryEntry(_ entry: HistoryEntry) {
+        expression = entry.expression
+        result = nil
+        errorMessage = nil
+        tryAutoEvaluate()
+    }
+
+    func clearHistory() {
+        historyService.clear()
+    }
+
+    // MARK: - Private helpers
+
+    private func tryAutoEvaluate() {
+        let trimmed = expression.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, !isTrailingOperator(expression) else { return }
+
+        do {
+            let value = try engine.evaluate(expression)
+            result = formatter.format(value)
+            resultDecimal = value    // НОВОЕ
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func isTrailingOperator(_ expr: String) -> Bool {
+        guard let last = expr.last else { return false }
+        return last == "+" || last == "-" || last == "*" || last == "/" || last == "%"
+    }
+
+    private func isOperator(_ char: String) -> Bool {
+        char == "+" || char == "-" || char == "*" || char == "/" || char == "%"
+    }
+
+    private func clearError() {
+        errorMessage = nil
+    }
+
+    private func isDigitOrDecimal(_ char: String) -> Bool {
+        return char == "." || (char.count == 1 && char.first?.isNumber == true)
+    }
+}
+```
+
+============================================================================
+ЧАСТЬ 9: СВОДНАЯ ТАБЛИЦА ИЗМЕНЕНИЙ
+============================================================================
+
+Файл                          | Строки    | Изменения
+------------------------------|-----------|------------------------------------------
+CalculatorViewModel.swift     | 12        | +1: resultDecimal property
+CalculatorViewModel.swift     | 18        | ~1: hasResult → resultDecimal != nil
+CalculatorViewModel.swift     | 28-47     | ~5: appendCharacter — убрать парсинг
+CalculatorViewModel.swift     | 50-63     | ~4: appendOperator — убрать парсинг
+CalculatorViewModel.swift     | 65-83     | ~1: evaluate — добавить resultDecimal
+CalculatorViewModel.swift     | 85-89     | ~1: clear — добавить resultDecimal = nil
+CalculatorViewModel.swift     | 91-105    | ~1: backspace — resultDecimal != nil
+CalculatorViewModel.swift     | 108-124   | ~3: toggleSign — убрать парсинг
+CalculatorViewModel.swift     | 132-136   | ~2: memoryAdd — убрать парсинг
+CalculatorViewModel.swift     | 138-142   | ~2: memorySubtract — убрать парсинг
+CalculatorViewModel.swift     | 167-181   | ~1: insertFromClipboard — добавить resultDecimal
+CalculatorViewModel.swift     | 205-215   | ~1: tryAutoEvaluate — добавить resultDecimal
+CalculatorView.swift          | 16-18     | ~1: isAC → resultDecimal == nil
+------------------------------|-----------|------------------------------------------
+ИТОГО файлов изменено: 2
+ИТОГО строк добавлено: ~10
+ИТОГО строк удалено/изменено: ~25
+
+============================================================================
+ЧАСТЬ 10: ВАЛИДАЦИЯ (ЧЕКЛИСТ)
+============================================================================
+
+Перед завершением проверить:
+
+[ ] 1. resultDecimal объявлен как var resultDecimal: Decimal? = nil
+[ ] 2. hasResult использует resultDecimal != nil
+[ ] 3. appendCharacter не содержит replacingOccurrences(",")
+[ ] 4. appendOperator не содержит replacingOccurrences(",")
+[ ] 5. toggleSign не содержит replacingOccurrences(",")
+[ ] 6. memoryAdd не содержит replacingOccurrences(",")
+[ ] 7. memorySubtract не содержит replacingOccurrences(",")
+[ ] 8. evaluate устанавливает resultDecimal = value
+[ ] 9. tryAutoEvaluate устанавливает resultDecimal = value
+[ ] 10. clear сбрасывает resultDecimal = nil
+[ ] 11. backspace проверяет resultDecimal != nil
+[ ] 12. insertFromClipboard устанавливает resultDecimal = value
+[ ] 13. CalculatorView.isAC использует resultDecimal == nil
+[ ] 14. swift build проходит без ошибок
+[ ] 15. swift test проходит все тесты
+[ ] 16. Сценарий "1234-1" → "*10" даёт "12,330"
+
+============================================================================
+КОНЕЦ ПЛАНА
+============================================================================

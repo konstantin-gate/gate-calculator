@@ -1,0 +1,266 @@
+# План исправления: затирание цифр при последовательном вводе (9,8,7 → "7")
+
+Дата: 2026-07-05
+Агент: OrnithQ8
+Статус: Ожидает исполнения
+
+---
+
+## 1. Описание проблемы
+
+При последовательном нажатии цифр на виртуальной клавиатуре калькулятора
+(например, 9 → 8 → 7) пользователь видит только последнюю нажатую цифру ("7"),
+а не ожидаемую строку "987". Каждая следующая нажатая кнопка полностью затирает
+предыдущий ввод.
+
+---
+
+## 2. Глубокий анализ причины (root cause)
+
+### 2.1. Цепочка вызовов при нажатии "9", "8", "7"
+
+**Шаг 1: Нажатие "9"**
+
+`CalculatorView.handleButtonPress(.digit("9"))` (CalculatorView.swift:153)
+  → `viewModel.appendCharacter("9")` (CalculatorViewModel.swift:28)
+
+Внутри `appendCharacter`:
+  - `clearError()` — errorMessage = nil
+  - `hasResult` = false (result == nil) → ветка `if hasResult && !isOperator(char)` НЕ выполняется
+  - `expression += "9"` → expression = "9"
+  - `tryAutoEvaluate()` (CalculatorViewModel.swift:44)
+
+Внутри `tryAutoEvaluate()`:
+  - `trimmed = "9"`, не пустой, `isTrailingOperator("9")` = false → guard проходит
+  - `engine.evaluate("9")` → возвращает Decimal(9)
+  - `result = formatter.format(Decimal(9))` → result = "9"
+
+Итог после шага 1: expression = "9", result = "9"
+
+**Шаг 2: Нажатие "8"**
+
+`viewModel.appendCharacter("8")` (CalculatorViewModel.swift:28)
+
+Внутри `appendCharacter`:
+  - `clearError()` — errorMessage = nil
+  - `hasResult` = true (result == "9"), `"8"` не оператор → ветка `if hasResult && !isOperator(char)` ВЫПОЛНЯЕТСЯ
+  - `expression = ""` → expression очищен!
+  - `result = nil`
+  - `expression += "8"` → expression = "8"
+  - `tryAutoEvaluate()`
+
+Внутри `tryAutoEvaluate()`:
+  - `engine.evaluate("8")` → Decimal(8)
+  - `result = "8"`
+
+Итог после шага 2: expression = "8", result = "8"
+
+**Шаг 3: Нажатие "7"** — идентично шагу 2, итог: expression = "7", result = "7"
+
+### 2.2. Механизм сбоя (два взаимосвязанных фактора)
+
+Фактор A: `tryAutoEvaluate()` в `appendCharacter` (строка 44) вычисляет
+выражение после КАЖДОГО нажатия, включая одиночные цифры. Для выражения "9"
+движок CalculatorEngine возвращает Decimal(9), и результат записывается в свойство `result`.
+
+Фактор B: Логика в `appendCharacter` (строки 31-41) при `hasResult == true`
+и не-операторе сбрасывает `expression = ""`, после чего добавляет новый символ.
+Это предназначено для случая "результат → начало нового числа", но срабатывает
+также при вводе многозначных чисел, потому что `tryAutoEvaluate()` заранее
+установил `result`.
+
+### 2.3. Подтверждение: все утверждения верифицированы
+
+Утверждение 1: `appendCharacter` вызывает `tryAutoEvaluate()` после добавления символа.
+  → Подтверждено: CalculatorViewModel.swift:44
+
+Утверждение 2: `tryAutoEvaluate()` вычисляет expression и устанавливает result.
+  → Подтверждено: CalculatorViewModel.swift:203-213, строки 208-209
+
+Утверждение 3: `hasResult` возвращает true когда result != nil.
+  → Подтверждено: CalculatorViewModel.swift:18
+
+Утверждение 4: При `hasResult == true` и не-операторе expression сбрасывается.
+  → Подтверждено: CalculatorViewModel.swift:31-33
+
+Утверждение 5: `isOperator` возвращает false для цифр "0"-"9".
+  → Подтверждено: CalculatorViewModel.swift:220-222 — проверяет только "+", "-", "*", "/", "%"
+
+Утверждение 6: `isTrailingOperator` возвращает false для строки, оканчивающейся на цифру.
+  → Подтверждено: CalculatorViewModel.swift:215-218 — проверяет только "+", "-", "*", "/", "%"
+
+Утверждение 7: CalculatorEngine.evaluate корректно вычисляет одиночную цифру.
+  → Подтверждено: CalculatorEngine.swift:23-41 — полный цикл tokenize→parse→evaluate
+
+---
+
+## 3. Архитектурно верное решение
+
+### Суть решения
+
+Не вызывать `tryAutoEvaluate()` в методе `appendCharacter` при добавлении
+цифры ("0"-"9") или десятичного разделителя (".").
+
+### Обоснование
+
+1. Auto-evaluation одиночных цифр и чисел (типа "987") не несёт пользы —
+   результат будет вычислен при нажатии "=" через `evaluate()`.
+
+2. Auto-evaluation выражений с операторами (типа "2+3") по-прежнему работает,
+   потому что операторы НЕ являются цифрами/разделителями, и для них
+   `tryAutoEvaluate()` вызывается по-прежнему.
+
+3. Решение минимально инвазивно: изменяется один метод, одна строка кода.
+
+4. Все существующие сценарии сохраняют корректность (доказано в разделе 4).
+
+---
+
+## 4. Детализированные шаги реализации
+
+### Шаг 1: Изменить метод `appendCharacter` в CalculatorViewModel.swift
+
+**Файл:** `Sources/ViewModels/CalculatorViewModel.swift`
+**Метод:** `appendCharacter(_ char: String)` (строки 28-45)
+
+**Текущий код (строка 43-44):**
+```swift
+        expression += char
+        tryAutoEvaluate()
+```
+
+**Новый код:**
+```swift
+        expression += char
+        if !isDigitOrDecimal(char) {
+            tryAutoEvaluate()
+        }
+```
+
+### Шаг 2: Добавить приватный helper-метод `isDigitOrDecimal`
+
+**Файл:** `Sources/ViewModels/CalculatorViewModel.swift`
+**Размещение:** В секции `// MARK: - Private helpers`, после метода `clearError()` (после строки 226)
+
+**Код:**
+```swift
+    private func isDigitOrDecimal(_ char: String) -> Bool {
+        return char == "." || (char.count == 1 && char.first?.isNumber == true)
+    }
+```
+
+**Обоснование:**
+- `char == "."` — явная проверка десятичного разделителя (соответствует inputValue для .decimalSeparator в ButtonLabel.swift:66)
+- `char.count == 1 && char.first?.isNumber == true` — проверка цифр "0"-"9" (соответствует inputValue для .digit в ButtonLabel.swift:75, где default возвращает displayTitle = "0"-"9")
+- Использование `char.first?.isNumber` вместо перечисления "0"..."9" — более надёжно и соответствует Swift-идиоме
+- Проверка `char.count == 1` защищает от потенциальных edge-кейсов с многобайтовыми строками
+
+### Шаг 3: Верификация — проверка всех сценариев
+
+#### Сценарий A: Последовательный ввод цифр "987"
+
+- Нажатие "9": hasResult=false → expression="9", isDigitOrDecimal("9")=true → NO auto-eval. result=nil, expression="9" ✓
+- Нажатие "8": hasResult=false → expression="98", isDigitOrDecimal("8")=true → NO auto-eval. result=nil, expression="98" ✓
+- Нажатие "7": hasResult=false → expression="987", isDigitOrDecimal("7")=true → NO auto-eval. result=nil, expression="987" ✓
+- Нажатие "=": evaluate() → engine.evaluate("987") → result="987" ✓
+
+#### Сценарий B: Выражение "2+3"
+
+- Нажатие "2": hasResult=false → expression="2", isDigitOrDecimal("2")=true → NO auto-eval. result=nil, expression="2" ✓
+- Нажатие "+": hasResult=false → expression="2+", isDigitOrDecimal("+")=false → tryAutoEvaluate(). isTrailingOperator("2+")=true → return. result=nil, expression="2+" ✓
+- Нажатие "3": hasResult=false → expression="2+3", isDigitOrDecimal("3")=true → NO auto-eval. result=nil, expression="2+3" ✓
+- Нажатие "=": evaluate() → engine.evaluate("2+3") → result="5" ✓
+
+#### Сценарий C: Результат → новое число
+
+- expression="", result="5" (после вычисления)
+- Нажатие "4": hasResult=true, !isOperator("4")=true → expression="", result=nil, expression="4", isDigitOrDecimal("4")=true → NO auto-eval ✓
+
+#### Сценарий D: Результат → оператор
+
+- expression="", result="5"
+- Нажатие "+": hasResult=true, isOperator("+")=true → expression="5+", result=nil, isDigitOrDecimal("+")=false → tryAutoEvaluate(). isTrailingOperator("5+")=true → return ✓
+
+#### Сценарий E: Одиночная цифра "="
+
+- Нажатие "5": expression="5", NO auto-eval. result=nil, expression="5" ✓
+- Нажатие "=": evaluate() → engine.evaluate("5") → result="5" ✓
+
+#### Сценарий F: Десятичное число "1.5"
+
+- Нажатие "1": expression="1", NO auto-eval ✓
+- Нажатие ",": appendCharacter(".") → expression="1.", isDigitOrDecimal(".")=true → NO auto-eval ✓
+- Нажатие "5": expression="1.5", isDigitOrDecimal("5")=true → NO auto-eval ✓
+- Нажатие "=": evaluate() → engine.evaluate("1.5") → result="1.5" ✓
+
+#### Сценарий G: Backspace после ввода цифр
+
+- expression="987", result=nil
+- Backspace: expression.removeLast() → "98", tryAutoEvaluate() вызывается (backspace не через appendCharacter) ✓
+
+#### Сценарий H: Операторы %, скобки, константы
+
+- "%": isDigitOrDecimal("%")=false → tryAutoEvaluate() вызывается (как и раньше) ✓
+- "(": isDigitOrDecimal("(")=false → tryAutoEvaluate() вызывается (как и раньше) ✓
+- "π": isDigitOrDecimal("π")=false → tryAutoEvaluate() вызывается (как и раньше) ✓
+
+#### Сценарий I: useHistoryEntry
+
+- expression = "2+3" (из истории), tryAutoEvaluate() вызывается напрямую (не через appendCharacter) → result="5" ✓
+- Это не затрагивается изменением, т.к. tryAutoEvaluate() вызывается напрямую в useHistoryEntry (CalculatorViewModel.swift:193)
+
+#### Сценарий J: insertFromClipboard
+
+- Не затрагивается — использует engine.evaluate напрямую (CalculatorViewModel.swift:172)
+
+---
+
+## 5. Список изменяемых файлов
+
+| # | Файл | Изменение |
+|---|------|-----------|
+| 1 | Sources/ViewModels/CalculatorViewModel.swift | Добавить условие `isDigitOrDecimal` перед вызовом `tryAutoEvaluate()` в `appendCharacter`; добавить приватный метод `isDigitOrDecimal` |
+
+---
+
+## 6. Что НЕ меняется (подтверждено)
+
+- `CalculatorView.swift` — не изменяется
+- `CalculatorButton.swift` — не изменяется
+- `DisplayView.swift` — не изменяется
+- `CalculatorEngine.swift` — не изменяется
+- `ButtonLabel.swift` (inputValue) — не изменяется
+- `tryAutoEvaluate()` — сигнатура и логика не меняются, только условие вызова
+- `evaluate()` — не изменяется
+- `backspace()` — не изменяется (вызывает tryAutoEvaluate напрямую, не через appendCharacter)
+- `useHistoryEntry()` — не изменяется (вызывает tryAutoEvaluate напрямую)
+- `insertFromClipboard()` — не изменяется
+
+---
+
+## 7. Потенциальные риски и их устранение
+
+### Риск 1: Auto-eval для выражений типа "2+3" больше не срабатывает мгновенно
+
+**Статус:** Не является риском. Пользователь видит выражение "2+3" и нажимает "=" для получения результата. Это стандартное поведение калькулятора.
+
+### Риск 2: Метод `isDigitOrDecimal` может некорректно обработать нестандартный ввод
+
+**Статус:** Не является риском. В `handleButtonPress` (CalculatorView.swift:131-165) в UI передаются только определённые `ButtonLabel` значения, и все они проходят через проверенные ветки switch. Метод `appendCharacter` receives only "0"-"9", ".", или операторы.
+
+### Риск 3: Изменение может сломать тесты
+
+**Статус:** Требуется проверка. Если существуют UI-тесты, проверяющие auto-eval цифр, их可能需要 обновить. Однако unit-тесты CalculatorEngine не затрагиваются.
+
+---
+
+## 8. Порядок выполнения (пошаговый)
+
+1. Открыть файл `Sources/ViewModels/CalculatorViewModel.swift`
+2. Найти метод `appendCharacter(_ char: String)` (строки 28-45)
+3. Заменить строку `tryAutoEvaluate()` на условный вызов с проверкой `isDigitOrDecimal`
+4. Найти секцию `// MARK: - Private helpers` (строка 201)
+5. После метода `clearError()` (конец строки 226) добавить новый метод `isDigitOrDecimal`
+6. Сохранить файл
+7. Запустить сборку проекта для проверки компиляции: `swift build` или через Xcode
+8. Запустить существующие тесты: `swift test`

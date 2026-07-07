@@ -1,0 +1,34 @@
+/* English localization */
+
+/* Display */
+"display.default" = "0";
+"display.expression" = "%@";
+
+/* Buttons */
+"button.clear" = "C";
+"button.equals" = "=";
+
+/* History */
+"history.title" = "History";
+"history.empty.title" = "No History";
+"history.empty.description" = "Calculations will appear here";
+"history.done" = "Done";
+"history.clear" = "Clear";
+
+/* Errors */
+"errors.divisionByZero" = "Division by zero";
+"errors.invalidExpression" = "Invalid expression";
+"errors.missingParenthesis" = "Missing closing parenthesis";
+"errors.extraParenthesis" = "Extra closing parenthesis";
+"errors.doubleOperator" = "Double operator";
+"errors.emptyExpression" = "Empty expression";
+"errors.invalidCharacter" = "Invalid character";
+"errors.numberOverflow" = "Number too large";
+"errors.invalidNumber" = "Invalid number";
+"errors.multipleDecimalSeparators" = "Multiple decimal separators";
+
+/* Clipboard */
+"clipboard.cannotEvaluate" = "Cannot evaluate";
+
+/* Memory */
+"memory.tooltip" = "Memory: ";

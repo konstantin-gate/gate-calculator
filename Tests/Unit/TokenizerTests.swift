@@ -1,0 +1,223 @@
+import XCTest
+@testable import CalculatorEngine
+
+final class TokenizerTests: XCTestCase {
+
+    func testTokenize_EmptyString() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("")
+        XCTAssertTrue(tokens.isEmpty)
+    }
+
+    func testTokenize_SimpleAddition() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("15+16")
+        XCTAssertEqual(tokens.count, 3)
+        if case .number(let v) = tokens[0] { XCTAssertEqual(v, 15) }
+        if case .binaryOperator(let op) = tokens[1] { XCTAssertEqual(op, .add) }
+        if case .number(let v) = tokens[2] { XCTAssertEqual(v, 16) }
+    }
+
+    func testTokenize_WithWhitespace() throws {
+        let tokenizer = Tokenizer()
+        let tokens1 = try tokenizer.tokenize("15+16")
+        let tokens2 = try tokenizer.tokenize("15 + 16")
+        let tokens3 = try tokenizer.tokenize(" 15 + 16 ")
+        XCTAssertEqual(tokens1.count, tokens2.count)
+        XCTAssertEqual(tokens2.count, tokens3.count)
+    }
+
+    func testTokenize_Parentheses() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("(15+16)")
+        XCTAssertEqual(tokens.count, 5)
+    }
+
+    func testTokenize_EqualsSign() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("15+16=")
+        XCTAssertEqual(tokens.count, 3)
+    }
+
+    func testTokenize_MultipleLines() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("15+16\n20+30")
+        XCTAssertEqual(tokens.count, 3)
+    }
+
+    func testTokenize_ExponentialNotation() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("1.5e3")
+        XCTAssertEqual(tokens.count, 1)
+        if case .number(let v) = tokens[0] {
+            XCTAssertEqual(v, 1500)
+        } else {
+            XCTFail("Expected number token")
+        }
+    }
+
+    func testTokenize_ExponentialNotationNegative() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("1.5e-3")
+        XCTAssertEqual(tokens.count, 1)
+        if case .number(let v) = tokens[0] {
+            XCTAssertEqual(v, 0.0015)
+        } else {
+            XCTFail("Expected number token")
+        }
+    }
+
+    func testTokenize_HexNumber() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("0xFF")
+        XCTAssertEqual(tokens.count, 1)
+        if case .number(let v) = tokens[0] {
+            XCTAssertEqual(v, 255)
+        } else {
+            XCTFail("Expected number token")
+        }
+    }
+
+    func testTokenize_HexNumberUpper() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("0XAB")
+        XCTAssertEqual(tokens.count, 1)
+        if case .number(let v) = tokens[0] {
+            XCTAssertEqual(v, 171)
+        } else {
+            XCTFail("Expected number token")
+        }
+    }
+
+    func testTokenize_BinaryNumber() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("0b1010")
+        XCTAssertEqual(tokens.count, 1)
+        if case .number(let v) = tokens[0] {
+            XCTAssertEqual(v, 10)
+        } else {
+            XCTFail("Expected number token")
+        }
+    }
+
+    func testTokenize_OctalNumber() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("0o77")
+        XCTAssertEqual(tokens.count, 1)
+        if case .number(let v) = tokens[0] {
+            XCTAssertEqual(v, 63)
+        } else {
+            XCTFail("Expected number token")
+        }
+    }
+
+    func testTokenize_Pi() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("π")
+        XCTAssertEqual(tokens.count, 1)
+        if case .number(let v) = tokens[0] {
+            XCTAssertEqual(v.description, "3.14159265358979323846")
+        } else {
+            XCTFail("Expected number token")
+        }
+    }
+
+    // ИСПРАВЛЕНИЕ C-11: "pi" бросает ошибку invalidCharacter('p')
+    func testTokenize_PiKeyword() {
+        let tokenizer = Tokenizer()
+        XCTAssertThrowsError(try tokenizer.tokenize("pi"))
+    }
+
+    func testTokenize_EulerNumber() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("e")
+        XCTAssertEqual(tokens.count, 1)
+        if case .number(let v) = tokens[0] {
+            XCTAssertTrue(v.description.hasPrefix("2.718"))
+        } else {
+            XCTFail("Expected number token")
+        }
+    }
+
+    // ИСПРАВЛЕНИЕ C-12: "e3" бросает ошибку invalidCharacter('e')
+    func testTokenize_EulerNumberFollowedByDigit() {
+        let tokenizer = Tokenizer()
+        XCTAssertThrowsError(try tokenizer.tokenize("e3"))
+    }
+
+    func testTokenize_UnaryMinus() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("-5+12")
+        // ИСПРАВЛЕНИЕ C-15: "-5+12" → 4 токена (unaryMinus, number(5), add, number(12))
+        XCTAssertEqual(tokens.count, 4)
+    }
+
+    func testTokenize_UnaryMinusAfterOperator() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("5*-3")
+        XCTAssertEqual(tokens.count, 4) // 5, *, unaryMinus, 3
+    }
+
+    func testTokenize_Percent() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("50%")
+        XCTAssertEqual(tokens.count, 2)
+    }
+
+    func testTokenize_InvalidCharacter() {
+        let tokenizer = Tokenizer()
+        XCTAssertThrowsError(try tokenizer.tokenize("15+a"))
+    }
+
+    func testTokenize_ThousandsSeparator() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("1,000,000")
+        XCTAssertEqual(tokens.count, 1)
+        if case .number(let v) = tokens[0] {
+            XCTAssertEqual(v, 1000000)
+        } else {
+            XCTFail("Expected number token")
+        }
+    }
+
+    func testTokenize_NaN() {
+        let tokenizer = Tokenizer()
+        XCTAssertThrowsError(try tokenizer.tokenize("NaN"))
+    }
+
+    func testTokenize_Infinity() {
+        let tokenizer = Tokenizer()
+        XCTAssertThrowsError(try tokenizer.tokenize("Infinity"))
+    }
+
+    func testTokenize_DoubleOperator() {
+        let tokenizer = Tokenizer()
+        XCTAssertThrowsError(try tokenizer.tokenize("5++3"))
+    }
+
+    func testTokenize_Decimals() throws {
+        let tokenizer = Tokenizer()
+        let tokens1 = try tokenizer.tokenize("3.14")
+        XCTAssertEqual(tokens1.count, 1)
+
+        let tokens2 = try tokenizer.tokenize("0.5")
+        XCTAssertEqual(tokens2.count, 1)
+
+        let tokens3 = try tokenizer.tokenize("-0.25")
+        XCTAssertEqual(tokens3.count, 2) // unaryMinus, 0.25
+    }
+
+    func testTokenize_ComplexExpression() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("((15+16)*5)/3")
+        // ИСПРАВЛЕНИЕ C-16: "((15+16)*5)/3" → 10 токенов
+        // leftParen, leftParen, number(15), add, number(16), rightParen, multiply, number(5), divide, number(3)
+        XCTAssertEqual(tokens.count, 10)
+    }
+
+    func testTokenize_PercentAfterParenthesis() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("(50+10)%")
+        XCTAssertEqual(tokens.count, 6) // (, 50, +, 10, ), %
+    }
+}

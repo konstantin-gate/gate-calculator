@@ -1,0 +1,34 @@
+/* Russian localization */
+
+/* Display */
+"display.default" = "0";
+"display.expression" = "%@";
+
+/* Buttons */
+"button.clear" = "C";
+"button.equals" = "=";
+
+/* History */
+"history.title" = "История";
+"history.empty.title" = "Нет истории";
+"history.empty.description" = "Вычисления появятся здесь";
+"history.done" = "Готово";
+"history.clear" = "Очистить";
+
+/* Errors */
+"errors.divisionByZero" = "Деление на ноль";
+"errors.invalidExpression" = "Неверное выражение";
+"errors.missingParenthesis" = "Пропущена закрывающая скобка";
+"errors.extraParenthesis" = "Лишняя закрывающая скобка";
+"errors.doubleOperator" = "Двойной оператор";
+"errors.emptyExpression" = "Пустое выражение";
+"errors.invalidCharacter" = "Неверный символ";
+"errors.numberOverflow" = "Число слишком большое";
+"errors.invalidNumber" = "Неверное число";
+"errors.multipleDecimalSeparators" = "Несколько десятичных разделителей";
+
+/* Clipboard */
+"clipboard.cannotEvaluate" = "Невозможно вычислить";
+
+/* Memory */
+"memory.tooltip" = "Память: ";
