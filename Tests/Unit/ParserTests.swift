@@ -199,13 +199,44 @@ final class ParserTests: XCTestCase {
         ]
         let ast = try parser.parse(tokens)
         if case .binary(.add, .number(100), let right) = ast {
-            if case .binary(.divide, .number(5), _) = right {
-                // OK - 100 + (5 / 100) = 100.05
+            if case .percentOf(.add, .number(100), _) = right {
+                // OK - percentOf(.add, 100, 5) → 100 + (100 × 5/100) = 105
             } else {
-                XCTFail("Expected percent as divide")
+                XCTFail("Expected percentOf node")
             }
         } else {
             XCTFail("Expected add at root")
         }
+    }
+
+    func testParse_PercentWithSubtraction() throws {
+        let parser = Parser()
+        let tokens: [Token] = [
+            .number(100),
+            .binaryOperator(.subtract),
+            .number(5),
+            .percent
+        ]
+        let ast = try parser.parse(tokens)
+        if case .binary(.subtract, .number(100), let right) = ast {
+            if case .percentOf(.subtract, .number(100), let v) = right {
+                XCTAssertEqual(v, 5)
+            } else {
+                XCTFail("Expected percentOf node")
+            }
+        } else {
+            XCTFail("Expected subtract at root")
+        }
+    }
+
+    func testParse_RelativePercent_Standalone() throws {
+        let parser = Parser()
+        let tokens: [Token] = [.number(50), .percent]
+        let ast = try parser.parse(tokens)
+        if case .binary(.divide, .number(50), let right) = ast {
+            if case .number(let v) = right, v == 100 {
+                // OK - 50 / 100 (absolute, unchanged)
+            } else { XCTFail("Expected divide by 100") }
+        } else { XCTFail("Expected binary divide node") }
     }
 }

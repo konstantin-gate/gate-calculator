@@ -13,4 +13,8 @@ public indirect enum ExpressionNode: Sendable {
 
     /// Бинарная операция (сложение, вычитание, умножение, деление).
     case binary(BinaryOperator, ExpressionNode, ExpressionNode)
+
+    /// Относительный процент: left × (percentValue / 100).
+    /// Только для + и - (относительный % как в Windows Calculator).
+    case percentOf(BinaryOperator, ExpressionNode, Decimal)
 }

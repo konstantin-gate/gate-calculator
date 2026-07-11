@@ -133,8 +133,11 @@ struct TestRunnerMain {
 
         checkEqual(try! engine.evaluate("5%+10"), Decimal(string: "10.05")!, "5%+10=10.05")
         checkEqual(try! engine.evaluate("(50+10)%"), Decimal(string: "0.6")!, "(50+10)%=0.6")
-        checkEqual(try! engine.evaluate("100+5%"), Decimal(string: "100.05")!, "100+5%=100.05")
-        checkEqual(try! engine.evaluate("100-5%"), Decimal(string: "99.95")!, "100-5%=99.95")
+        checkEqual(try! engine.evaluate("100+5%"), 105, "100+5%=105 (relative)")
+        checkEqual(try! engine.evaluate("100-5%"), 95, "100-5%=95 (relative)")
+        checkEqual(try! engine.evaluate("100+10%"), 110, "100+10%=110 (relative)")
+        checkEqual(try! engine.evaluate("200-10%"), 180, "200-10%=180 (relative)")
+        checkEqual(try! engine.evaluate("-100+5%"), -105, "-100+5%=-105 (negative base)")
         checkEqual(try! engine.evaluate("15+16+17+18"), 66, "15+16+17+18=66")
         checkEqual(try! engine.evaluate("5*-3"), -15, "5*-3=-15")
 

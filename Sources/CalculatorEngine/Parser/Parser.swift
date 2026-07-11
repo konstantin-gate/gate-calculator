@@ -26,6 +26,10 @@ public struct Parser: Sendable {
             case .number:
                 output.append(token)
 
+            case .percentRelative:
+                // Относительный % — уже обработанный токен, просто добавляем в output
+                output.append(token)
+
             case .leftParenthesis:
                 operatorStack.append(token)
 
@@ -66,14 +70,35 @@ public struct Parser: Sendable {
                 operatorStack.append(token)
 
             case .percent:
-                while let top = operatorStack.last, !top.isLeftParen {
-                    if top.precedenceValue > token.precedenceValue {
+                // Относительный %: если на стеке операторов + или -, создаём .percentRelative
+                if let top = operatorStack.last, case .binaryOperator(let op) = top {
+                    if op == .add || op == .subtract {
+                        // Выталкиваем оператор в output: [leftNumber, rightNumber, operator]
                         output.append(operatorStack.removeLast())
+                        // Удаляем оператор (последний элемент)
+                        output.removeLast()
+                        // Извлекаем percentValue (правый операнд, теперь последний)
+                        guard output.count >= 2 else {
+                            throw CalculatorError.invalidExpression("Invalid expression")
+                        }
+                        let percentValueToken = output.removeLast()
+                        guard case .number(let percentValue) = percentValueToken else {
+                            throw CalculatorError.invalidExpression("Invalid expression")
+                        }
+                        // Извлекаем left (левый операнд, теперь последний)
+                        let leftToken = output.removeLast()
+                        // Возвращаем левый операнд в output
+                        output.append(leftToken)
+                        // Создаём токен относительного процента
+                        output.append(.percentRelative(op, percentValue))
                     } else {
-                        break
+                        // * или / — абсолютный % (деление на 100), оператор остаётся в стеке
+                        operatorStack.append(token)
                     }
+                } else {
+                    // Стек пуст, скобка, унарный минус — абсолютный %
+                    operatorStack.append(token)
                 }
-                output.append(token)
             }
         }
 
@@ -119,6 +144,13 @@ public struct Parser: Sendable {
                 }
                 let hundred = Decimal(string: "100")!
                 stack.append(.binary(.divide, value, .number(hundred)))
+
+            case .percentRelative(let op, let percentValue):
+                // Относительный %: создаём узел .percentOf
+                guard let left = stack.popLast() else {
+                    throw CalculatorError.invalidExpression("Invalid expression")
+                }
+                stack.append(.percentOf(op, left, percentValue))
 
             case .leftParenthesis, .rightParenthesis:
                 throw CalculatorError.invalidExpression("Unexpected parenthesis")

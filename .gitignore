@@ -1,3 +1,5 @@
 .build/
 .xcodeproj/
 xcuserdata/
+.memory_bank
+.mimocode

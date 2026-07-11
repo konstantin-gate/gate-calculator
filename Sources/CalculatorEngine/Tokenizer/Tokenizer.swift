@@ -335,10 +335,15 @@ public struct Tokenizer: Sendable {
                 }
 
             case .percent:
-                let prevIsOp = i > tokens.startIndex && isOperatorOrLeftParen(tokens[i - 1])
-                if prevIsOp {
+                // % после левой скобки — невалидно (нельзя начать выражение с %)
+                if i > tokens.startIndex && tokens[i - 1] == .leftParenthesis {
                     throw CalculatorError.doubleOperator
                 }
+                // % после % — невалидно (двойной процент)
+                if i > tokens.startIndex && tokens[i - 1] == .percent {
+                    throw CalculatorError.doubleOperator
+                }
+                // Двойной % подряд (проверка следующего токена)
                 if i + 1 < tokens.endIndex && tokens[i + 1] == .percent {
                     throw CalculatorError.doubleOperator
                 }

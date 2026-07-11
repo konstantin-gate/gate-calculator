@@ -36,6 +36,22 @@ public struct Evaluator: Sendable {
                 }
                 return l / r
             }
+
+        case .percentOf(let op, let left, let percentValue):
+            // Относительный %: left + (left × p/100) для .add
+            //                 left - (left × p/100) для .subtract
+            let l = try evaluate(left)
+            let hundred = Decimal(string: "100")!
+            let percent = percentValue / hundred
+
+            switch op {
+            case .add:
+                return l + l * percent
+            case .subtract:
+                return l - l * percent
+            default:
+                throw CalculatorError.invalidExpression("Invalid percent operator")
+            }
         }
     }
 }

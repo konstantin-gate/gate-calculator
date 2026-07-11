@@ -220,4 +220,15 @@ final class TokenizerTests: XCTestCase {
         let tokens = try tokenizer.tokenize("(50+10)%")
         XCTAssertEqual(tokens.count, 6) // (, 50, +, 10, ), %
     }
+
+    func testTokenize_PercentAfterOperator() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("100+10%")
+        XCTAssertEqual(tokens.count, 5) // 100, +, 10, %
+    }
+
+    func testTokenize_DoublePercent() {
+        let tokenizer = Tokenizer()
+        XCTAssertThrowsError(try tokenizer.tokenize("100%%"))
+    }
 }

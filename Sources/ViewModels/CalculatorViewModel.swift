@@ -148,10 +148,46 @@ final class CalculatorViewModel {
                 self.result = nil
             }
         } else {
-            if expression.hasPrefix("-") {
-                expression = String(expression.dropFirst())
+            // 1. Проверка на обёрнутое отрицательное выражение: -(выражение)
+            if let inner = isWrappedNegativeExpression(expression) {
+                expression = inner
+            } else if isSimpleTerm(expression) {
+                // 2. Простой термин (число, константа, процент, унарный минус + число)
+                if expression.hasPrefix("-") {
+                    expression = String(expression.dropFirst())
+                } else {
+                    expression = "-" + expression
+                }
             } else {
-                expression = "-(\(expression))"
+                // 3. Сложное выражение
+                if expression.hasPrefix("-") {
+                    // Выражение начинается с -, но не является простым термином и не обёрнуто в -(...)
+                    let trimmed = expression.trimmingCharacters(in: .whitespaces)
+                    guard !trimmed.isEmpty, !isTrailingOperator(expression), !hasUnclosedParentheses(trimmed) else {
+                        // Краевой случай: выражение состоит только из "-" или "+"
+                        if trimmed == "-" || trimmed == "+" {
+                            expression = ""
+                            errorMessage = nil
+                            return
+                        }
+                        expression = "-(\(expression))"
+                        errorMessage = nil
+                        return
+                    }
+                    
+                    do {
+                        let value = try engine.evaluate(expression)
+                        let negated = -value
+                        expression = negated.description
+                        self.resultDecimal = nil
+                        self.result = nil
+                    } catch {
+                        expression = "-(\(expression))"
+                    }
+                } else {
+                    // Не начинается с -, оборачиваем в -(выражение)
+                    expression = "-(\(expression))"
+                }
             }
         }
         errorMessage = nil
@@ -240,6 +276,81 @@ final class CalculatorViewModel {
     }
 
     // MARK: - Private helpers
+
+    private func isSimpleTerm(_ expression: String) -> Bool {
+        let tokenizer = Tokenizer()
+        do {
+            let tokens = try tokenizer.tokenize(expression)
+            
+            // Проверка на наличие недопустимых токенов (бинарные операторы, скобки)
+            for token in tokens {
+                switch token {
+                case .number, .unaryMinus, .percent:
+                    break
+                default:
+                    return false // binaryOperator, leftParenthesis, rightParenthesis не допускаются в простом термине
+                }
+            }
+            
+            if tokens.isEmpty { return false }
+            
+            // Допустимые паттерны простого термина:
+            // 1. [.number]
+            // 2. [.unaryMinus, .number]
+            // 3. [.number, .percent]
+            // 4. [.unaryMinus, .number, .percent]
+            
+            switch tokens.count {
+            case 1:
+                guard case .number = tokens[0] else { return false }
+                return true
+            case 2:
+                switch (tokens[0], tokens[1]) {
+                case (.unaryMinus, .number): return true
+                case (.number, .percent): return true
+                default: return false
+                }
+            case 3:
+                switch (tokens[0], tokens[1], tokens[2]) {
+                case (.unaryMinus, .number, .percent): return true
+                default: return false
+                }
+            default:
+                return false
+            }
+        } catch {
+            return false
+        }
+    }
+
+    private func isWrappedNegativeExpression(_ expression: String) -> String? {
+        guard expression.hasPrefix("-(") else { return nil }
+        
+        // Открывающая скобка '(' находится на индексе 1 (после '-')
+        let openParenIndex = expression.index(expression.startIndex, offsetBy: 1)
+        var balance = 1
+        var currentIndex = expression.index(after: openParenIndex)
+        
+        while currentIndex < expression.endIndex {
+            let char = expression[currentIndex]
+            if char == "(" {
+                balance += 1
+            } else if char == ")" {
+                balance -= 1
+                if balance == 0 {
+                    // Найдена закрывающая скобка, соответствующая открывающей после "-("
+                    let endIndex = expression.index(after: currentIndex)
+                    guard endIndex == expression.endIndex else { return nil } // Выражение должно заканчиваться здесь
+                    let innerStart = expression.index(expression.startIndex, offsetBy: 2) // после "-("
+                    let innerEnd = currentIndex
+                    return String(expression[innerStart..<innerEnd])
+                }
+            }
+            currentIndex = expression.index(after: currentIndex)
+        }
+        
+        return nil // Не найдена закрывающая скобка с балансом 0
+    }
 
     private func tryAutoEvaluate() {
         let trimmed = expression.trimmingCharacters(in: .whitespaces)

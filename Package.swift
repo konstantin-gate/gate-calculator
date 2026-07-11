@@ -29,6 +29,10 @@ let package = Package(
             name: "CalculatorApp",
             dependencies: ["CalculatorEngine"],
             path: "Sources",
+            exclude: [
+                "CalculatorEngine",
+                "TestRunner"
+            ],
             sources: [
                 "App",
                 "Views",

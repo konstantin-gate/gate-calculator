@@ -125,17 +125,58 @@ final class CalculatorEngineTests: XCTestCase {
 
     func testEvaluate_PercentWithAddition() throws {
         let result = try engine.evaluate("100+5%")
-        XCTAssertEqual(result, Decimal(string: "100.05")!) // 100 + (5/100) = 100.05
+        XCTAssertEqual(result, 105) // 100 + (100 × 5/100) = 105 (относительный %)
     }
 
     func testEvaluate_PercentWithSubtraction() throws {
         let result = try engine.evaluate("100-5%")
-        XCTAssertEqual(result, Decimal(string: "99.95")!) // 100 - (5/100) = 99.95
+        XCTAssertEqual(result, 95) // 100 - (100 × 5/100) = 95 (относительный %)
     }
 
     func testEvaluate_PercentAfterParentheses() throws {
         let result = try engine.evaluate("(50+10)%")
         XCTAssertEqual(result, Decimal(string: "0.6")!) // (50+10)/100 = 0.6
+    }
+
+    // MARK: - Relative Percent (Windows Calculator)
+
+    func testEvaluate_RelativePercent_Addition() throws {
+        let result = try engine.evaluate("100+10%")
+        XCTAssertEqual(result, 110) // 100 + (100 × 10/100) = 110
+    }
+
+    func testEvaluate_RelativePercent_Subtraction() throws {
+        let result = try engine.evaluate("200-10%")
+        XCTAssertEqual(result, 180) // 200 - (200 × 10/100) = 180
+    }
+
+    func testEvaluate_RelativePercent_ChainedAddition() throws {
+        let result = try engine.evaluate("100+10%+5")
+        XCTAssertEqual(result, 115) // (100+10%) + 5 = 110 + 5 = 115
+    }
+
+    func testEvaluate_RelativePercent_NegativeBase() throws {
+        let result = try engine.evaluate("-100+5%")
+        XCTAssertEqual(result, -105) // -100 + (-100 × 5/100) = -105
+    }
+
+    func testEvaluate_RelativePercent_StandaloneFirst() throws {
+        let result = try engine.evaluate("5%+10")
+        XCTAssertEqual(result, Decimal(string: "10.05")!) // 5/100 + 10 = 10.05
+    }
+
+    func testEvaluate_RelativePercent_AfterParentheses() throws {
+        let result = try engine.evaluate("(50+10)%")
+        XCTAssertEqual(result, Decimal(string: "0.6")!) // (50+10)/100 = 0.6
+    }
+
+    func testEvaluate_RelativePercent_Decimals() throws {
+        let result = try engine.evaluate("200+5.5%")
+        XCTAssertEqual(result, Decimal(string: "211")!) // 200 + 200×5.5/100 = 211
+    }
+
+    func testEvaluate_DoublePercent() {
+        XCTAssertThrowsError(try engine.evaluate("100%%"))
     }
 
     // MARK: - Special Cases from Section 39
