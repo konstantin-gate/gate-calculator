@@ -95,7 +95,7 @@ class KeyHandlerNSView: NSView {
         default:
             if !characters.isEmpty {
                 let char = characters.first ?? " "
-                if char.isNumber || "+-*/().%,πe".contains(char) {
+                if char.isNumber || "+-*/().%,".contains(char) {
                     let normalized = char == "," ? "." : String(char)
                     viewModel.appendCharacter(normalized)
                 }

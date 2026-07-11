@@ -97,10 +97,7 @@ struct CalculatorView: View {
                 ButtonSpec(label: .digit("3"), type: .digit),
                 ButtonSpec(label: .equals,       type: .operator),
             ])
-            // Строка 7: e, π, 0 (wide), запятая
             buttonRow([
-                ButtonSpec(label: .eulerConst,   type: .function),
-                ButtonSpec(label: .pi,           type: .function),
                 ButtonSpec(label: .digit("0"),       type: .digit),
                 ButtonSpec(label: .decimalSeparator, type: .digit),
             ])
@@ -145,10 +142,6 @@ struct CalculatorView: View {
             viewModel.appendCharacter(label.inputValue)
         case .decimalSeparator:
             viewModel.appendCharacter(".")
-        case .pi:
-            viewModel.appendCharacter("π")
-        case .eulerConst:
-            viewModel.appendCharacter("e")
         case .digit(let d):
             viewModel.appendCharacter(d)
         case .mc:
@@ -159,8 +152,6 @@ struct CalculatorView: View {
             viewModel.memorySubtract()
         case .mR:
             viewModel.memoryRecall()
-        default:
-            break
         }
     }
 }

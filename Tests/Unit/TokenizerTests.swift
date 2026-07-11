@@ -111,34 +111,6 @@ final class TokenizerTests: XCTestCase {
         }
     }
 
-    func testTokenize_Pi() throws {
-        let tokenizer = Tokenizer()
-        let tokens = try tokenizer.tokenize("π")
-        XCTAssertEqual(tokens.count, 1)
-        if case .number(let v) = tokens[0] {
-            XCTAssertEqual(v.description, "3.14159265358979323846")
-        } else {
-            XCTFail("Expected number token")
-        }
-    }
-
-    // ИСПРАВЛЕНИЕ C-11: "pi" бросает ошибку invalidCharacter('p')
-    func testTokenize_PiKeyword() {
-        let tokenizer = Tokenizer()
-        XCTAssertThrowsError(try tokenizer.tokenize("pi"))
-    }
-
-    func testTokenize_EulerNumber() throws {
-        let tokenizer = Tokenizer()
-        let tokens = try tokenizer.tokenize("e")
-        XCTAssertEqual(tokens.count, 1)
-        if case .number(let v) = tokens[0] {
-            XCTAssertTrue(v.description.hasPrefix("2.718"))
-        } else {
-            XCTFail("Expected number token")
-        }
-    }
-
     // ИСПРАВЛЕНИЕ C-12: "e3" бросает ошибку invalidCharacter('e')
     func testTokenize_EulerNumberFollowedByDigit() {
         let tokenizer = Tokenizer()

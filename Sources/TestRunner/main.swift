@@ -62,14 +62,8 @@ struct TestRunnerMain {
         let t8 = try! tokenizer.tokenize("0o77")
         if case .number(let v) = t8[0] { checkEqual(v, 63, "Octal: 0o77 = 63") }
 
-        let t9 = try! tokenizer.tokenize("π")
-        check(t9.count == 1, "Pi constant")
-
-        let t10 = try! tokenizer.tokenize("e")
-        check(t10.count == 1, "Euler number")
-
-        let t11 = try! tokenizer.tokenize("-5+12")
-        check(t11.count == 4, "Unary minus: 4 tokens (unaryMinus, number, add, number)")
+        let t9 = try! tokenizer.tokenize("-5+12")
+        check(t9.count == 4, "Unary minus: 4 tokens (unaryMinus, number, add, number)")
 
         // Tokenizer error cases
         do { _ = try tokenizer.tokenize("15+a"); check(false, "Tokenizer: 15+a should throw") } catch { check(true, "Invalid character throws") }
@@ -107,15 +101,6 @@ struct TestRunnerMain {
         checkEqual(try! engine.evaluate("0b1010"), 10, "0b1010=10")
         checkEqual(try! engine.evaluate("0o77"), 63, "0o77=63")
         checkEqual(try! engine.evaluate("1.5e3"), 1500, "1.5e3=1500")
-
-        let piResult = try! engine.evaluate("π")
-        check(piResult.description.hasPrefix("3.1415"), "π starts with 3.1415")
-
-        let eResult = try! engine.evaluate("e")
-        check(eResult.description.hasPrefix("2.718"), "e starts with 2.718")
-
-        let pi2Result = try! engine.evaluate("π * 2")
-        check(pi2Result.description.hasPrefix("6.283"), "π*2 starts with 6.283")
 
         checkEqual(try! engine.evaluate("0.1+0.2"), Decimal(string: "0.3")!, "0.1+0.2=0.3 (Decimal)")
 

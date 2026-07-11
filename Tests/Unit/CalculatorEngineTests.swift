@@ -201,21 +201,6 @@ final class CalculatorEngineTests: XCTestCase {
         XCTAssertEqual(result, 1500)
     }
 
-    func testSpecialCase_Pi() throws {
-        let result = try engine.evaluate("π")
-        XCTAssertTrue(result.description.hasPrefix("3.14159265358979"))
-    }
-
-    func testSpecialCase_PiMultiplication() throws {
-        let result = try engine.evaluate("π*2")
-        XCTAssertTrue(result.description.hasPrefix("6.28318530717958"))
-    }
-
-    func testSpecialCase_EulerNumber() throws {
-        let result = try engine.evaluate("e")
-        XCTAssertTrue(result.description.hasPrefix("2.71828182845905"))
-    }
-
     func testSpecialCase_ThousandsSeparator() throws {
         let result = try engine.evaluate("1,000,000")
         XCTAssertEqual(result, 1000000)

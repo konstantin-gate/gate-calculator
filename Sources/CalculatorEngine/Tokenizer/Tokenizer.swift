@@ -84,47 +84,12 @@ public struct Tokenizer: Sendable {
                 continue
             }
 
-            // ИСПРАВЛЕНИЕ C-04: удалено char.lowercased() == "pi" (невозможное условие)
-            if char == "\u{03C0}" || char == "π" {
-                tokens.append(.number(Decimal.pi))
-                advance(&i, in: cleaned)
-                continue
-            }
-
-            if char == "e" {
-                let nextIndex = cleaned.index(after: i)
-                if nextIndex < cleaned.endIndex {
-                    let nextChar = cleaned[nextIndex]
-                    // ИСПРАВЛЕНИЕ C-12: "e3", "e2.5" — невалидный ввод
-                    if nextChar.isNumber || nextChar == "." {
-                        throw CalculatorError.invalidCharacter("e")
-                    } else {
-                        tokens.append(.number(Self.eulerNumber))
-                        advance(&i, in: cleaned)
-                    }
-                } else {
-                    tokens.append(.number(Self.eulerNumber))
-                    advance(&i, in: cleaned)
-                }
-                continue
-            }
-
             throw CalculatorError.invalidCharacter(String(char))
         }
 
         try validateTokenSequence(tokens)
         return tokens
     }
-
-    private static let eulerNumber: Decimal = {
-        var result = Decimal(1)
-        var factorial = Decimal(1)
-        for i in 1..<30 {
-            factorial *= Decimal(i)
-            result += Decimal(1) / factorial
-        }
-        return result
-    }()
 
     private func preprocess(_ input: String) throws -> String {
         var result = input

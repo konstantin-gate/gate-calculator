@@ -33,8 +33,6 @@ enum ButtonLabel {
     case mPlus                            // "M+" — добавить в память
     case mMinus                           // "M−" — вычесть из памяти
     case mR                               // "MR" — вспомнить из памяти
-    case pi                               // "π"
-    case eulerConst                       // "e"
 
     var displayTitle: String {
         switch self {
@@ -55,8 +53,6 @@ enum ButtonLabel {
         case .mPlus:               return "M+"
         case .mMinus:              return "M−"
         case .mR:                  return "MR"
-        case .pi:                  return "π"
-        case .eulerConst:          return "e"
         }
     }
 
@@ -70,8 +66,6 @@ enum ButtonLabel {
         case .add:                 return "+"
         case .openParen:           return "("
         case .closeParen:          return ")"
-        case .eulerConst:          return "e"
-        case .pi:                  return "π"
         default:                   return displayTitle
         }
     }
@@ -93,8 +87,6 @@ enum ButtonLabel {
         case .mPlus:               return "Добавить в память"
         case .mMinus:              return "Вычесть из памяти"
         case .mR:                  return "Вспомнить из памяти"
-        case .pi:                  return "Число Пи"
-        case .eulerConst:          return "Число Эйлера"
         default:                   return displayTitle
         }
     }
