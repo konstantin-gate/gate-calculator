@@ -27,6 +27,9 @@
 "errors.invalidNumber" = "Неверное число";
 "errors.multipleDecimalSeparators" = "Несколько десятичных разделителей";
 
+/* Ошибки (дополнительные) */
+"errors.negativeSquareRoot" = "Корень из отрицательного числа";
+
 /* Clipboard */
 "clipboard.cannotEvaluate" = "Невозможно вычислить";
 

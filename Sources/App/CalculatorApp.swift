@@ -11,8 +11,8 @@ struct CalculatorApp: App {
         }
         .windowStyle(.titleBar)
         .windowResizability(.contentSize)
-        // ИСПРАВЛЕНИЕ S-07: размеры 350×520 вместо 340×490
-        .defaultSize(width: 350, height: 520)
+        // ИСПРАВЛЕНИЕ S-07 и перестановка кнопок 6x5: размеры 380×520
+        .defaultSize(width: 380, height: 520)
         .commands {
             CommandGroup(replacing: .newItem) {}
         }

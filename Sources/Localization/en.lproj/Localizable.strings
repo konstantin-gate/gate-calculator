@@ -27,6 +27,9 @@
 "errors.invalidNumber" = "Invalid number";
 "errors.multipleDecimalSeparators" = "Multiple decimal separators";
 
+/* Errors (additional) */
+"errors.negativeSquareRoot" = "Square root of negative number";
+
 /* Clipboard */
 "clipboard.cannotEvaluate" = "Cannot evaluate";
 

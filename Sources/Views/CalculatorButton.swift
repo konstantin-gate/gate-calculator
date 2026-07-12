@@ -33,12 +33,15 @@ enum ButtonLabel {
     case mPlus                            // "M+" — добавить в память
     case mMinus                           // "M−" — вычесть из памяти
     case mR                               // "MR" — вспомнить из памяти
+    case clearAll                         // "AC" — полная очистка (expression, result, errorMessage)
+    case sqrt                             // "√" — квадратный корень
+    case square                           // "x²" — возведение в квадрат
 
     var displayTitle: String {
         switch self {
         case .digit(let s):        return s
         case .decimalSeparator:    return ","
-        case .clear:               return "AC"
+        case .clear:               return "C"
         case .backspace:           return "⌫"
         case .plusMinus:           return "+/−"
         case .percent:             return "%"
@@ -53,6 +56,9 @@ enum ButtonLabel {
         case .mPlus:               return "M+"
         case .mMinus:              return "M−"
         case .mR:                  return "MR"
+        case .clearAll:            return "AC"
+        case .sqrt:                return "√"
+        case .square:              return "x²"
         }
     }
 
@@ -66,6 +72,9 @@ enum ButtonLabel {
         case .add:                 return "+"
         case .openParen:           return "("
         case .closeParen:          return ")"
+        case .clearAll:            return "AC"
+        case .sqrt:                return "√"
+        case .square:              return "x²"
         default:                   return displayTitle
         }
     }
@@ -87,6 +96,9 @@ enum ButtonLabel {
         case .mPlus:               return "Добавить в память"
         case .mMinus:              return "Вычесть из памяти"
         case .mR:                  return "Вспомнить из памяти"
+        case .clearAll:            return "Очистить всё"
+        case .sqrt:                return "Квадратный корень"
+        case .square:              return "Возведение в квадрат"
         default:                   return displayTitle
         }
     }
@@ -111,7 +123,6 @@ struct CalculatorButton: View {
     let spec: ButtonSpec
     let diameter: CGFloat
     let fontSize: CGFloat
-    let isAC: Bool              // true → "AC", false → "C" (только для .clear)
     let spacing: CGFloat        // расстояние между кнопками, для wide-кнопки "0"
     let onTap: (ButtonLabel) -> Void
 
@@ -137,9 +148,6 @@ struct CalculatorButton: View {
     }
 
     private var displayText: String {
-        if case .clear = spec.label {
-            return isAC ? "AC" : "C"
-        }
         return spec.label.displayTitle
     }
 
@@ -187,11 +195,9 @@ struct CalculatorButton: View {
                         ? CalculatorColors.pressedColor(for: backgroundColor)
                         : backgroundColor
                 )
-                .clipShape(
-                    spec.isWide
-                        ? AnyShape(Capsule())
-                        : AnyShape(RoundedRectangle(cornerRadius: buttonCornerRadius))
-                )
+        .clipShape(
+            AnyShape(RoundedRectangle(cornerRadius: buttonCornerRadius))
+        )
                 .overlay {
                     if hasBorder && !spec.isWide {
                         RoundedRectangle(cornerRadius: buttonCornerRadius)

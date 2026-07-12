@@ -122,6 +122,15 @@ final class CalculatorViewModel {
         errorMessage = nil
     }
 
+    // MARK: - Очистка текущего ввода
+
+    /// Очищает expression и errorMessage, но сохраняет result и resultDecimal.
+    /// Аналог кнопки «C» в macOS Calculator.app — сброс текущего ввода без потери результата.
+    func clearCurrentInput() {
+        clearError()
+        expression = ""
+    }
+
     func backspace() {
         clearError()
 
@@ -191,6 +200,56 @@ final class CalculatorViewModel {
             }
         }
         errorMessage = nil
+    }
+
+    // MARK: - Функциональные вычисления (√, x²)
+
+    /// Вычисляет квадратный корень из текущего значения на дисплее.
+    /// Использует цепочку: Decimal → Double → Foundation.sqrt() → Decimal(floatLiteral:).
+    /// Это единственный корректный способ вычислить √ для Decimal в Swift Foundation,
+    /// т.к. ни Decimal, ни NSDecimalNumber не имеют встроенного метода squareRoot().
+    func calculateSquareRoot() {
+        clearError()
+
+        guard let value = currentDisplayValue else {
+            errorMessage = NSLocalizedString("errors.emptyExpression", comment: "")
+            return
+        }
+
+        guard value >= 0 else {
+            errorMessage = NSLocalizedString("errors.negativeSquareRoot", comment: "")
+            return
+        }
+
+        // Цепочка преобразования: Decimal → Double → sqrt → Decimal
+        let doubleValue = NSDecimalNumber(decimal: value).doubleValue
+        let sqrtDouble = Foundation.sqrt(doubleValue)
+        let sqrtDecimal = Decimal(floatLiteral: sqrtDouble)
+
+        historyService.add(expression: "√(\(expression.isEmpty ? formatter.format(value) : expression))", result: sqrtDecimal)
+
+        result = formatter.format(sqrtDecimal)
+        resultDecimal = sqrtDecimal
+        expression = ""
+    }
+
+    /// Возводит текущее значение на дисплее в квадрат.
+    /// Использует простую операцию Decimal * Decimal — точная арифметика без преобразования в Double.
+    func calculateSquare() {
+        clearError()
+
+        guard let value = currentDisplayValue else {
+            errorMessage = NSLocalizedString("errors.emptyExpression", comment: "")
+            return
+        }
+
+        let squared = value * value
+
+        historyService.add(expression: "(\(expression.isEmpty ? formatter.format(value) : expression))²", result: squared)
+
+        result = formatter.format(squared)
+        resultDecimal = squared
+        expression = ""
     }
 
     // MARK: - Memory operations (SRS §39-43)

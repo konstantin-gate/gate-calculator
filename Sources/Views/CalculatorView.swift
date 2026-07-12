@@ -12,11 +12,6 @@ struct CalculatorView: View {
     private let buttonFontSize: CGFloat = 18
     private let buttonSpacing: CGFloat = 8
 
-    // AC или C — зависит от состояния ViewModel
-    private var isAC: Bool {
-        viewModel.expression.isEmpty && viewModel.resultDecimal == nil
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             DisplayView(
@@ -50,56 +45,57 @@ struct CalculatorView: View {
         }
     }
 
-    // MARK: - Стандартная сетка (4 колонки)
+    // MARK: - Стандартная сетка (5 столбцов)
 
     @ViewBuilder
     private var standardButtonGrid: some View {
         VStack(spacing: buttonSpacing) {
-            // Строка 1: память
+            // Ряд 1: скобки, backspace, AC, C
+            buttonRow([
+                ButtonSpec(label: .openParen,      type: .function),
+                ButtonSpec(label: .closeParen,     type: .function),
+                ButtonSpec(label: .backspace,      type: .function),
+                ButtonSpec(label: .clearAll,       type: .function),
+                ButtonSpec(label: .clear,          type: .function),
+            ])
+            // Ряд 2: память и деление
             buttonRow([
                 ButtonSpec(label: .mc,             type: .function, isEnabled: viewModel.hasMemory),
                 ButtonSpec(label: .mPlus,          type: .function),
                 ButtonSpec(label: .mMinus,         type: .function),
                 ButtonSpec(label: .mR,             type: .function, isEnabled: viewModel.hasMemory, hasMemoryIndicator: viewModel.hasMemory, memoryTooltip: viewModel.memoryDisplayValue),
+                ButtonSpec(label: .divide,         type: .operator),
             ])
-            // Строка 2: скобки, backspace, clear
-            buttonRow([
-                ButtonSpec(label: .openParen,      type: .function),
-                ButtonSpec(label: .closeParen,     type: .function),
-                ButtonSpec(label: .backspace,      type: .function),
-                ButtonSpec(label: .clear,          type: .function),
-            ])
-            // Строка 3: %, ±, ÷, ×
+            // Ряд 3: %, +/−, √, x², ×
             buttonRow([
                 ButtonSpec(label: .percent,        type: .function),
                 ButtonSpec(label: .plusMinus,      type: .function),
-                ButtonSpec(label: .divide,         type: .operator),
+                ButtonSpec(label: .sqrt,           type: .function),
+                ButtonSpec(label: .square,         type: .function),
                 ButtonSpec(label: .multiply,       type: .operator),
             ])
-            // Строка 4: 7, 8, 9, −
+            // Ряд 4: 6, 7, 8, 9, −
             buttonRow([
-                ButtonSpec(label: .digit("7"), type: .digit),
-                ButtonSpec(label: .digit("8"), type: .digit),
-                ButtonSpec(label: .digit("9"), type: .digit),
-                ButtonSpec(label: .subtract,   type: .operator),
+                ButtonSpec(label: .digit("6"),     type: .digit),
+                ButtonSpec(label: .digit("7"),     type: .digit),
+                ButtonSpec(label: .digit("8"),     type: .digit),
+                ButtonSpec(label: .digit("9"),     type: .digit),
+                ButtonSpec(label: .subtract,       type: .operator),
             ])
-            // Строка 5: 4, 5, 6, +
+            // Ряд 5: 2, 3, 4, 5, +
             buttonRow([
-                ButtonSpec(label: .digit("4"), type: .digit),
-                ButtonSpec(label: .digit("5"), type: .digit),
-                ButtonSpec(label: .digit("6"), type: .digit),
-                ButtonSpec(label: .add,        type: .operator),
+                ButtonSpec(label: .digit("2"),     type: .digit),
+                ButtonSpec(label: .digit("3"),     type: .digit),
+                ButtonSpec(label: .digit("4"),     type: .digit),
+                ButtonSpec(label: .digit("5"),     type: .digit),
+                ButtonSpec(label: .add,            type: .operator),
             ])
-            // Строка 6: 1, 2, 3, =
-            buttonRow([
-                ButtonSpec(label: .digit("1"), type: .digit),
-                ButtonSpec(label: .digit("2"), type: .digit),
-                ButtonSpec(label: .digit("3"), type: .digit),
-                ButtonSpec(label: .equals,       type: .operator),
-            ])
+            // Ряд 6: 0, 1, запятая, = (широкая)
             buttonRow([
                 ButtonSpec(label: .digit("0"),       type: .digit),
+                ButtonSpec(label: .digit("1"),       type: .digit),
                 ButtonSpec(label: .decimalSeparator, type: .digit),
+                ButtonSpec(label: .equals,           type: .operator, isWide: true),
             ])
         }
     }
@@ -114,7 +110,6 @@ struct CalculatorView: View {
                     spec: spec,
                     diameter: buttonDiameter,
                     fontSize: buttonFontSize,
-                    isAC: isAC,
                     spacing: buttonSpacing
                 ) { label in
                     handleButtonPress(label)
@@ -128,6 +123,8 @@ struct CalculatorView: View {
     private func handleButtonPress(_ label: ButtonLabel) {
         switch label {
         case .clear:
+            viewModel.clearCurrentInput()
+        case .clearAll:
             viewModel.clear()
         case .equals:
             viewModel.evaluate()
@@ -152,6 +149,10 @@ struct CalculatorView: View {
             viewModel.memorySubtract()
         case .mR:
             viewModel.memoryRecall()
+        case .sqrt:
+            viewModel.calculateSquareRoot()
+        case .square:
+            viewModel.calculateSquare()
         }
     }
 }
