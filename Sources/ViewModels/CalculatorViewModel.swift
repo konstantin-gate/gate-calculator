@@ -10,6 +10,7 @@ final class CalculatorViewModel {
     var expression: String = ""
     var result: String? = nil
     internal var resultDecimal: Decimal? = nil
+    private var hasPreviousResult = false
     var errorMessage: String? = nil
 
     private let engine = CalculatorEngine()
@@ -60,12 +61,17 @@ final class CalculatorViewModel {
     func appendCharacter(_ char: String) {
         clearError()
 
+        // Сохраняем предыдущий результат ПЕРЕД сбросом состояния,
+        // чтобы он мог быть использован при обработке оператора.
+        let savedResultDecimal = resultDecimal
+
         if hasResult && !isOperator(char) {
             expression = ""
             result = nil
             resultDecimal = nil
+            hasPreviousResult = false
         } else if hasResult && isOperator(char) {
-            if let dec = resultDecimal {
+            if let dec = savedResultDecimal {
                 expression = dec.description
             }
             result = nil
@@ -110,6 +116,7 @@ final class CalculatorViewModel {
             result = formatted
             resultDecimal = value
             expression = ""
+            hasPreviousResult = true
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -120,28 +127,99 @@ final class CalculatorViewModel {
         result = nil
         resultDecimal = nil
         errorMessage = nil
+        hasPreviousResult = false
     }
 
     // MARK: - Очистка текущего ввода
 
-    /// Очищает expression и errorMessage, но сохраняет result и resultDecimal.
-    /// Аналог кнопки «C» в macOS Calculator.app — сброс текущего ввода без потери результата.
+    /// Определяет поведение кнопки «C» в двух режимах калькулятора.
+    ///
+    /// Режим «Просмотр результата» (hasResult == true):
+    ///   полная очистка через clear() — как AC. Экран «0», кнопка AC.
+    ///   Срабатывает при: результате после «=», вставке из буфера,
+    ///   useHistoryEntry с вычислимым выражением, после √/x².
+    ///
+    /// Режим «Активный набор» (hasResult == false и expression не пустая):
+    ///   удаляет последний операнд (если в конце есть последовательность [0-9.]),
+    ///   либо один последний символ-оператор/скобку (если операнд не найден).
+    ///   Кнопка остаётся C, пока expression не станет пустой — тогда AC.
+    ///
+    /// Если expression пустая и hasResult == false — нет операции (кнопка AC).
     func clearCurrentInput() {
         clearError()
-        expression = ""
+
+        if hasResult {
+            // Режим «Просмотр результата» — полная очистка как AC
+            clear()
+            return
+        }
+
+        if expression.isEmpty {
+            // Калькулятор уже в начальном состоянии — нет операции
+            return
+        }
+
+        // Режим «Активный набор» — удаляем последний операнд или оператор
+        removeLastOperandOrOperator()
+
+        // Сбросить result/resultDecimal/hasPreviousResult,
+        // чтобы DisplayView показал урезанное expression
+        result = nil
+        resultDecimal = nil
+        hasPreviousResult = false
+    }
+
+    /// Удаляет последний операнд (последовательность [0-9.]) или один последний символ-оператор/скобку.
+    private func removeLastOperandOrOperator() {
+        let trimmed = expression.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+
+        let chars = Array(trimmed)
+        let operandEndIndex = chars.count
+        var operandStartIndex = chars.count
+
+        // Сканируем с конца, пока символ — цифра или десятичная точка
+        for i in (0..<chars.count).reversed() {
+            let char = chars[i]
+            if char.isNumber || char == "." {
+                operandStartIndex = i
+            } else {
+                break
+            }
+        }
+
+        // Если диапазон не пустой (в конце expression есть последовательность цифр/точек)
+        if operandStartIndex < operandEndIndex {
+            // Удаляем операнд: оставляем всё до operandStartIndex
+            let prefixLength = operandStartIndex
+            if prefixLength > 0 {
+                expression = String(trimmed.prefix(prefixLength))
+            } else {
+                expression = ""
+            }
+        } else {
+            // Диапазон пустой (последний символ — не цифра и не точка, т.е. оператор или скобка)
+            // Удаляем один последний символ
+            expression.removeLast()
+        }
     }
 
     func backspace() {
         clearError()
 
         if expression.isEmpty, resultDecimal != nil {
+            hasPreviousResult = false
             clear()
             return
         }
 
         if !expression.isEmpty {
+            // Сбросить result/resultDecimal, чтобы DisplayView показал expression
+            result = nil
+            resultDecimal = nil
+            hasPreviousResult = false
             expression.removeLast()
-            tryAutoEvaluate()
+            // tryAutoEvaluate() НЕ вызывается — автовычисление при backspace не нужно
         } else if hasResult {
             clear()
         }
@@ -155,6 +233,7 @@ final class CalculatorViewModel {
                 expression = negated.description
                 self.resultDecimal = nil
                 self.result = nil
+                hasPreviousResult = false
             }
         } else {
             // 1. Проверка на обёрнутое отрицательное выражение: -(выражение)
@@ -190,6 +269,7 @@ final class CalculatorViewModel {
                         expression = negated.description
                         self.resultDecimal = nil
                         self.result = nil
+                        hasPreviousResult = false
                     } catch {
                         expression = "-(\(expression))"
                     }
@@ -231,6 +311,7 @@ final class CalculatorViewModel {
         result = formatter.format(sqrtDecimal)
         resultDecimal = sqrtDecimal
         expression = ""
+        hasPreviousResult = true
     }
 
     /// Возводит текущее значение на дисплее в квадрат.
@@ -250,6 +331,7 @@ final class CalculatorViewModel {
         result = formatter.format(squared)
         resultDecimal = squared
         expression = ""
+        hasPreviousResult = true
     }
 
     // MARK: - Memory operations (SRS §39-43)
@@ -280,21 +362,7 @@ final class CalculatorViewModel {
 
         result = nil
         resultDecimal = nil
-    }
-
-    func handleKeyCommand(_ key: String) {
-        switch key {
-        case "C", "\u{1B}":
-            clear()
-        case "\u{7F}", "\u{8}":
-            backspace()
-        case "\r", "\n", "=":
-            evaluate()
-        default:
-            if key.count == 1, let firstChar = key.first, firstChar.isNumber || "+-*/().%".contains(firstChar) {
-                appendCharacter(key)
-            }
-        }
+        hasPreviousResult = false
     }
 
     // MARK: - Clipboard
@@ -304,12 +372,13 @@ final class CalculatorViewModel {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
-        clear()
+        clearCurrentInput()
 
         if let value = try? engine.evaluate(trimmed) {
             expression = trimmed      // Показать выражение пользователю
             result = formatter.format(value)  // Показать результат
             resultDecimal = value
+            hasPreviousResult = true
             historyService.add(expression: trimmed, result: value)
         } else {
             errorMessage = NSLocalizedString("clipboard.cannotEvaluate", comment: "")
@@ -323,6 +392,7 @@ final class CalculatorViewModel {
     // MARK: - History
 
     func useHistoryEntry(_ entry: HistoryEntry) {
+        hasPreviousResult = false
         expression = entry.expression
         result = nil
         errorMessage = nil
@@ -419,6 +489,7 @@ final class CalculatorViewModel {
             let value = try engine.evaluate(expression)
             result = formatter.format(value)
             resultDecimal = value
+            hasPreviousResult = true
         } catch {
             // Ошибки автовычисления не показываются пользователю —
             // выражение в процессе набора может быть неполным.

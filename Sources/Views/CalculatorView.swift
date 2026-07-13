@@ -12,6 +12,13 @@ struct CalculatorView: View {
     private let buttonFontSize: CGFloat = 18
     private let buttonSpacing: CGFloat = 8
 
+    /// Определяет, какую метку показывать на динамической кнопке очистки.
+    /// true — показать «AC» (полная очистка): expression пуст.
+    /// false — показать «C» (очистка текущего ввода): есть выражение.
+    private var isAC: Bool {
+        return viewModel.expression.isEmpty
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             DisplayView(
@@ -50,13 +57,13 @@ struct CalculatorView: View {
     @ViewBuilder
     private var standardButtonGrid: some View {
         VStack(spacing: buttonSpacing) {
-            // Ряд 1: скобки, backspace, AC, C
+            // Ряд 1: скобки, буфер обмена, backspace, AC/C (динамическая)
             buttonRow([
                 ButtonSpec(label: .openParen,      type: .function),
                 ButtonSpec(label: .closeParen,     type: .function),
+                ButtonSpec(label: .clipboard,      type: .function),
                 ButtonSpec(label: .backspace,      type: .function),
-                ButtonSpec(label: .clearAll,       type: .function),
-                ButtonSpec(label: .clear,          type: .function),
+                ButtonSpec(label: isAC ? .clearAll : .clear, type: .function),
             ])
             // Ряд 2: память и деление
             buttonRow([
@@ -123,9 +130,21 @@ struct CalculatorView: View {
     private func handleButtonPress(_ label: ButtonLabel) {
         switch label {
         case .clear:
-            viewModel.clearCurrentInput()
+            if isAC {
+                viewModel.clear()
+            } else {
+                viewModel.clearCurrentInput()
+            }
         case .clearAll:
             viewModel.clear()
+        case .clipboard:
+            if viewModel.displayValue != "0" {
+                viewModel.copyResult()
+            } else {
+                if let text = ClipboardManager.shared.getString() {
+                    viewModel.insertFromClipboard(text)
+                }
+            }
         case .equals:
             viewModel.evaluate()
         case .backspace:

@@ -36,6 +36,7 @@ enum ButtonLabel {
     case clearAll                         // "AC" — полная очистка (expression, result, errorMessage)
     case sqrt                             // "√" — квадратный корень
     case square                           // "x²" — возведение в квадрат
+    case clipboard                        // иконка буфера обмена (копировать / вставить)
 
     var displayTitle: String {
         switch self {
@@ -59,6 +60,7 @@ enum ButtonLabel {
         case .clearAll:            return "AC"
         case .sqrt:                return "√"
         case .square:              return "x²"
+        case .clipboard:           return ""
         }
     }
 
@@ -75,6 +77,7 @@ enum ButtonLabel {
         case .clearAll:            return "AC"
         case .sqrt:                return "√"
         case .square:              return "x²"
+        case .clipboard:           return ""
         default:                   return displayTitle
         }
     }
@@ -99,7 +102,17 @@ enum ButtonLabel {
         case .clearAll:            return "Очистить всё"
         case .sqrt:                return "Квадратный корень"
         case .square:              return "Возведение в квадрат"
+        case .clipboard:           return "Буфер обмена"
         default:                   return displayTitle
+        }
+    }
+
+    /// SF Symbol name для отображения в виде иконки вместо текста.
+    /// nil для всех кнопок, у которых отображается текстовая метка.
+    var iconSystemName: String? {
+        switch self {
+        case .clipboard:   return "doc.on.doc"
+        default:           return nil
         }
     }
 }
@@ -114,6 +127,7 @@ struct ButtonSpec: Identifiable {
     var isEnabled: Bool = true
     var hasMemoryIndicator: Bool = false
     var memoryTooltip: String? = nil
+    var isAC: Bool = false      // true для динамической кнопки "AC" / "C"
 }
 
 // MARK: - Кнопка калькулятора (скруглённые квадраты, macOS Tahoe style)
@@ -148,6 +162,10 @@ struct CalculatorButton: View {
     }
 
     private var displayText: String {
+        // Динамическая метка: кнопка .clear показывает "AC" когда isAC == true
+        if case .clear = spec.label, spec.isAC {
+            return "AC"
+        }
         return spec.label.displayTitle
     }
 
@@ -184,26 +202,36 @@ struct CalculatorButton: View {
             guard spec.isEnabled else { return }
             onTap(spec.label)
         } label: {
-            Text(displayText)
-                .font(.system(size: fontSize, weight: .regular))
-                .minimumScaleFactor(0.55)
-                .lineLimit(1)
-                .foregroundStyle(foregroundColor)
-                .frame(width: targetWidth, height: diameter)
-                .background(
-                    isPressed
-                        ? CalculatorColors.pressedColor(for: backgroundColor)
-                        : backgroundColor
-                )
-        .clipShape(
-            AnyShape(RoundedRectangle(cornerRadius: buttonCornerRadius))
-        )
-                .overlay {
-                    if hasBorder && !spec.isWide {
-                        RoundedRectangle(cornerRadius: buttonCornerRadius)
-                            .stroke(borderColor, lineWidth: 1.0)
-                    }
+            Group {
+                if let icon = spec.label.iconSystemName {
+                    Image(systemName: icon)
+                        .font(.system(size: fontSize, weight: .regular))
+                        .minimumScaleFactor(0.55)
+                        .lineLimit(1)
+                        .foregroundStyle(foregroundColor)
+                } else {
+                    Text(displayText)
+                        .font(.system(size: fontSize, weight: .regular))
+                        .minimumScaleFactor(0.55)
+                        .lineLimit(1)
+                        .foregroundStyle(foregroundColor)
                 }
+            }
+            .frame(width: targetWidth, height: diameter)
+            .background(
+                isPressed
+                    ? CalculatorColors.pressedColor(for: backgroundColor)
+                    : backgroundColor
+            )
+            .clipShape(
+                AnyShape(RoundedRectangle(cornerRadius: buttonCornerRadius))
+            )
+            .overlay {
+                if hasBorder && !spec.isWide {
+                    RoundedRectangle(cornerRadius: buttonCornerRadius)
+                        .stroke(borderColor, lineWidth: 1.0)
+                }
+            }
         }
         .buttonStyle(.plain)
         .overlay(alignment: .bottomTrailing) {
