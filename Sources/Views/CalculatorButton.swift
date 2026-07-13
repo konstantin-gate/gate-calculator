@@ -128,6 +128,11 @@ struct ButtonSpec: Identifiable {
     var hasMemoryIndicator: Bool = false
     var memoryTooltip: String? = nil
     var isAC: Bool = false      // true для динамической кнопки "AC" / "C"
+    var iconOverride: String? = nil
+    var accessibilityLabelOverride: String? = nil
+    var hasClipboardIndicator: Bool = false
+    var clipboardIndicatorColor: Color? = nil
+    var clipboardTooltip: String? = nil
 }
 
 // MARK: - Кнопка калькулятора (скруглённые квадраты, macOS Tahoe style)
@@ -203,7 +208,7 @@ struct CalculatorButton: View {
             onTap(spec.label)
         } label: {
             Group {
-                if let icon = spec.label.iconSystemName {
+                if let icon = spec.iconOverride ?? spec.label.iconSystemName {
                     Image(systemName: icon)
                         .font(.system(size: fontSize, weight: .regular))
                         .minimumScaleFactor(0.55)
@@ -243,6 +248,15 @@ struct CalculatorButton: View {
                     .accessibilityHidden(true)
             }
         }
+        .overlay(alignment: .bottomTrailing) {
+            if spec.hasClipboardIndicator, let color = spec.clipboardIndicatorColor {
+                Circle()
+                    .fill(color)
+                    .frame(width: 8, height: 8)
+                    .padding(6)
+                    .accessibilityHidden(true)
+            }
+        }
         .frame(width: targetWidth, height: diameter)
         .scaleEffect(isPressed ? 0.93 : 1.0)
         .animation(
@@ -254,14 +268,14 @@ struct CalculatorButton: View {
                 .onChanged { _ in isPressed = true }
                 .onEnded   { _ in isPressed = false }
         )
-        .accessibilityLabel(spec.label.accessibilityDescription)
+        .accessibilityLabel(spec.accessibilityLabelOverride ?? spec.label.accessibilityDescription)
         .accessibilityAddTraits(.isButton)
-        .accessibilityHint(spec.label.accessibilityDescription)
+        .accessibilityHint(spec.accessibilityLabelOverride ?? spec.label.accessibilityDescription)
         .accessibilityIdentifier("calc_btn_\(displayText.replacingOccurrences(of: "/", with: "div"))")
         .opacity(spec.isEnabled ? 1.0 : 0.4)
         .onHover { hovering in isHovered = hovering }
         .overlay(alignment: .topTrailing) {
-            if isHovered, let tip = spec.memoryTooltip {
+            if isHovered, let tip = spec.memoryTooltip ?? spec.clipboardTooltip {
                 Text(tip)
                     .font(.system(size: 12, weight: .regular))
                     .foregroundStyle(Color.black)

@@ -19,6 +19,25 @@ struct CalculatorView: View {
         return viewModel.expression.isEmpty
     }
 
+    /// Динамическая спецификация кнопки буфера обмена.
+    /// Меняет иконку, описание accessibility, индикатор и тултип в зависимости от режима.
+    private var clipboardSpec: ButtonSpec {
+        let isPasteMode = viewModel.isClipboardPasteMode
+        return ButtonSpec(
+            label: .clipboard,
+            type: .function,
+            iconOverride: isPasteMode ? "doc.on.clipboard" : "doc.on.doc",
+            accessibilityLabelOverride: isPasteMode
+                ? NSLocalizedString("clipboard.paste", comment: "")
+                : NSLocalizedString("clipboard.copy", comment: ""),
+            hasClipboardIndicator: true,
+            clipboardIndicatorColor: isPasteMode ? Color.green : CalculatorColors.buttonOperator,
+            clipboardTooltip: isPasteMode
+                ? NSLocalizedString("clipboard.paste.tooltip", comment: "")
+                : NSLocalizedString("clipboard.copy.tooltip", comment: "")
+        )
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             DisplayView(
@@ -61,7 +80,7 @@ struct CalculatorView: View {
             buttonRow([
                 ButtonSpec(label: .openParen,      type: .function),
                 ButtonSpec(label: .closeParen,     type: .function),
-                ButtonSpec(label: .clipboard,      type: .function),
+                clipboardSpec,
                 ButtonSpec(label: .backspace,      type: .function),
                 ButtonSpec(label: isAC ? .clearAll : .clear, type: .function),
             ])

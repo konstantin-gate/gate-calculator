@@ -33,5 +33,11 @@
 /* Clipboard */
 "clipboard.cannotEvaluate" = "Cannot evaluate";
 
+/* Clipboard */
+"clipboard.copy" = "Copy result";
+"clipboard.paste" = "Paste from clipboard";
+"clipboard.copy.tooltip" = "Copy result to clipboard";
+"clipboard.paste.tooltip" = "Paste from clipboard";
+
 /* Memory */
 "memory.tooltip" = "Memory: ";

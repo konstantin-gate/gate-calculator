@@ -19,6 +19,12 @@ final class CalculatorViewModel {
 
     var hasResult: Bool { resultDecimal != nil }
 
+    /// Режим кнопки буфера обмена: true — показать «Вставить» (нет результата),
+    /// false — показать «Копировать» (есть результат).
+    var isClipboardPasteMode: Bool {
+        !hasResult
+    }
+
     /// Текущее значение, отображаемое в главном поле дисплея.
     /// Используется для копирования в буфер обмена (⌘C).
     var displayValue: String {

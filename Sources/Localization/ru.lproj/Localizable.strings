@@ -33,5 +33,11 @@
 /* Clipboard */
 "clipboard.cannotEvaluate" = "Невозможно вычислить";
 
+/* Clipboard */
+"clipboard.copy" = "Копировать результат";
+"clipboard.paste" = "Вставить из буфера";
+"clipboard.copy.tooltip" = "Копировать результат в буфер";
+"clipboard.paste.tooltip" = "Вставить из буфера обмена";
+
 /* Memory */
 "memory.tooltip" = "Память: ";
