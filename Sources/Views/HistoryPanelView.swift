@@ -8,9 +8,9 @@ struct HistoryPanelView: View {
         NavigationStack {
             if viewModel.historyEntries.isEmpty {
                 ContentUnavailableView(
-                    NSLocalizedString("history.empty.title", comment: ""),
+                    localizedString("history.empty.title", comment: ""),
                     systemImage: "clock",
-                    description: Text(NSLocalizedString("history.empty.description", comment: ""))
+                    description: Text(localizedString("history.empty.description", comment: ""))
                 )
             } else {
                 List(viewModel.historyEntries) { entry in
@@ -36,14 +36,14 @@ struct HistoryPanelView: View {
                 }
             }
         }
-        .navigationTitle(NSLocalizedString("history.title", comment: ""))
+        .navigationTitle(localizedString("history.title", comment: ""))
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button(NSLocalizedString("history.done", comment: "")) { dismiss() }
+                Button(localizedString("history.done", comment: "")) { dismiss() }
             }
 
             ToolbarItem(placement: .destructiveAction) {
-                Button(NSLocalizedString("history.clear", comment: "")) {
+                Button(localizedString("history.clear", comment: "")) {
                     viewModel.clearHistory()
                 }
                 .disabled(viewModel.historyEntries.isEmpty)

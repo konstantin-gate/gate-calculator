@@ -36,8 +36,8 @@
 /* Clipboard */
 "clipboard.copy" = "Копировать результат";
 "clipboard.paste" = "Вставить из буфера";
-"clipboard.copy.tooltip" = "Копировать результат в буфер";
-"clipboard.paste.tooltip" = "Вставить из буфера обмена";
+"clipboard.copy.tooltip" = "Копировать";
+"clipboard.paste.tooltip" = "Вставить";
 
 /* Memory */
 "memory.tooltip" = "Память: ";

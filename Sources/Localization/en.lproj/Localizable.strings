@@ -36,8 +36,8 @@
 /* Clipboard */
 "clipboard.copy" = "Copy result";
 "clipboard.paste" = "Paste from clipboard";
-"clipboard.copy.tooltip" = "Copy result to clipboard";
-"clipboard.paste.tooltip" = "Paste from clipboard";
+"clipboard.copy.tooltip" = "Copy";
+"clipboard.paste.tooltip" = "Paste";
 
 /* Memory */
 "memory.tooltip" = "Memory: ";

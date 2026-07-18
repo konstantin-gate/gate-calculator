@@ -20,21 +20,22 @@ struct CalculatorView: View {
     }
 
     /// Динамическая спецификация кнопки буфера обмена.
-    /// Меняет иконку, описание accessibility, индикатор и тултип в зависимости от режима.
+    /// Меняет описание accessibility, индикатор и тултип в зависимости от режима.
     private var clipboardSpec: ButtonSpec {
         let isPasteMode = viewModel.isClipboardPasteMode
         return ButtonSpec(
             label: .clipboard,
             type: .function,
-            iconOverride: isPasteMode ? "doc.on.clipboard" : "doc.on.doc",
+            iconOverride: "doc.on.doc",
             accessibilityLabelOverride: isPasteMode
-                ? NSLocalizedString("clipboard.paste", comment: "")
-                : NSLocalizedString("clipboard.copy", comment: ""),
-            hasClipboardIndicator: true,
-            clipboardIndicatorColor: isPasteMode ? Color.green : CalculatorColors.buttonOperator,
+                ? localizedString("clipboard.paste", comment: "")
+                : localizedString("clipboard.copy", comment: ""),
+            hasClipboardIndicator: viewModel.hasResult,
+            clipboardIndicatorColor: Color.white,
             clipboardTooltip: isPasteMode
-                ? NSLocalizedString("clipboard.paste.tooltip", comment: "")
-                : NSLocalizedString("clipboard.copy.tooltip", comment: "")
+                ? localizedString("clipboard.paste.tooltip", comment: "")
+                : localizedString("clipboard.copy.tooltip", comment: ""),
+            clipboardIndicatorBorderColor: viewModel.hasResult ? CalculatorColors.buttonOperator : nil,
         )
     }
 
@@ -61,8 +62,8 @@ struct CalculatorView: View {
                 Button { showHistory = true } label: {
                     Image(systemName: "clock")
                 }
-                .help(NSLocalizedString("history.title", comment: ""))
-                .accessibilityLabel(NSLocalizedString("history.title", comment: ""))
+                .help(localizedString("history.title", comment: ""))
+                .accessibilityLabel(localizedString("history.title", comment: ""))
             }
         }
         .sheet(isPresented: $showHistory) {
@@ -89,7 +90,7 @@ struct CalculatorView: View {
                 ButtonSpec(label: .mc,             type: .function, isEnabled: viewModel.hasMemory),
                 ButtonSpec(label: .mPlus,          type: .function),
                 ButtonSpec(label: .mMinus,         type: .function),
-                ButtonSpec(label: .mR,             type: .function, isEnabled: viewModel.hasMemory, hasMemoryIndicator: viewModel.hasMemory, memoryTooltip: viewModel.memoryDisplayValue),
+                ButtonSpec(label: .mR,             type: .function, isEnabled: viewModel.hasMemory, memoryTooltip: viewModel.memoryDisplayValue),
                 ButtonSpec(label: .divide,         type: .operator),
             ])
             // Ряд 3: %, +/−, √, x², ×

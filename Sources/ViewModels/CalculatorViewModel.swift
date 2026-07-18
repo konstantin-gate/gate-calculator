@@ -298,12 +298,12 @@ final class CalculatorViewModel {
         clearError()
 
         guard let value = currentDisplayValue else {
-            errorMessage = NSLocalizedString("errors.emptyExpression", comment: "")
+            errorMessage = localizedString("errors.emptyExpression", comment: "")
             return
         }
 
         guard value >= 0 else {
-            errorMessage = NSLocalizedString("errors.negativeSquareRoot", comment: "")
+            errorMessage = localizedString("errors.negativeSquareRoot", comment: "")
             return
         }
 
@@ -326,7 +326,7 @@ final class CalculatorViewModel {
         clearError()
 
         guard let value = currentDisplayValue else {
-            errorMessage = NSLocalizedString("errors.emptyExpression", comment: "")
+            errorMessage = localizedString("errors.emptyExpression", comment: "")
             return
         }
 
@@ -387,7 +387,7 @@ final class CalculatorViewModel {
             hasPreviousResult = true
             historyService.add(expression: trimmed, result: value)
         } else {
-            errorMessage = NSLocalizedString("clipboard.cannotEvaluate", comment: "")
+            errorMessage = localizedString("clipboard.cannotEvaluate", comment: "")
         }
     }
 
