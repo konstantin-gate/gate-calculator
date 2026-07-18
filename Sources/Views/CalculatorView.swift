@@ -31,11 +31,11 @@ struct CalculatorView: View {
                 ? localizedString("clipboard.paste", comment: "")
                 : localizedString("clipboard.copy", comment: ""),
             hasClipboardIndicator: viewModel.hasResult,
-            clipboardIndicatorColor: Color.white,
+            clipboardIndicatorColor: CalculatorColors.buttonOperator,
             clipboardTooltip: isPasteMode
                 ? localizedString("clipboard.paste.tooltip", comment: "")
                 : localizedString("clipboard.copy.tooltip", comment: ""),
-            clipboardIndicatorBorderColor: viewModel.hasResult ? CalculatorColors.buttonOperator : nil,
+            clipboardIndicatorBorderColor: nil,
         )
     }
 

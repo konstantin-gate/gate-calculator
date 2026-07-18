@@ -251,24 +251,12 @@ struct CalculatorButton: View {
         }
         .overlay(alignment: .bottomTrailing) {
             if spec.hasClipboardIndicator, let color = spec.clipboardIndicatorColor {
-                if let borderColor = spec.clipboardIndicatorBorderColor {
-                    Circle()
-                        .stroke(borderColor, lineWidth: 1.0)
-                        .frame(width: 8, height: 8)
-                        .background(
-                            Circle()
-                                .fill(color)
-                                .frame(width: 6, height: 6)
-                        )
-                        .padding(6)
-                        .accessibilityHidden(true)
-                } else {
-                    Circle()
-                        .fill(color)
-                        .frame(width: 8, height: 8)
-                        .padding(6)
-                        .accessibilityHidden(true)
-                }
+                Circle()
+                    .fill(color)
+                    .frame(width: 6, height: 6)
+                    .padding(6)
+                    .offset(x: -2, y: -2)
+                    .accessibilityHidden(true)
             }
         }
         .frame(width: targetWidth, height: diameter)
