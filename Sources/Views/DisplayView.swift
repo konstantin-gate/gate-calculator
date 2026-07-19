@@ -5,7 +5,6 @@ struct DisplayView: View {
     let result: String?
     let errorMessage: String?
 
-    @State private var resultOpacity: Double = 1.0
     @State private var shakeOffset: CGFloat = 0
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -62,17 +61,6 @@ struct DisplayView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                         .truncationMode(.middle)
-                        .opacity(resultOpacity)
-                        .onChange(of: result) { _, newValue in
-                            guard newValue != nil else { return }
-                            // Flash при появлении результата
-                            withAnimation(reduceMotion ? nil : .easeIn(duration: 0.05)) {
-                                resultOpacity = 0.6
-                            }
-                            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.12).delay(0.05)) {
-                                resultOpacity = 1.0
-                            }
-                        }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
@@ -81,7 +69,6 @@ struct DisplayView: View {
         .padding(.horizontal, 20)
         .padding(.top, 8)
         .padding(.bottom, 12)
-        .animation(.easeInOut(duration: 0.15), value: expression.isEmpty)
         // Accessibility для всего дисплея
         .accessibilityElement(children: .ignore)
         .accessibilityLabel({
