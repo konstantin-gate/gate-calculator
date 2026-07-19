@@ -85,7 +85,7 @@ final class CalculatorViewModel {
         }
 
         expression += char
-        if !isDigitOrDecimal(char) {
+        if !isDigitOrDecimal(char) && char != ")" {
             tryAutoEvaluate()
         }
     }

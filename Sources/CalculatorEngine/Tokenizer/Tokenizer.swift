@@ -91,6 +91,85 @@ public struct Tokenizer: Sendable {
         return tokens
     }
 
+    // Удаляет пробелы-разделители тысяч (пробелы между двумя цифрами)
+    private func removeThousandsSeparatorSpaces(_ str: String) -> String {
+        var result = ""
+
+        let chars = Array(str)
+        for i in chars.indices {
+            if chars[i].isWhitespace && i > 0 && i + 1 < chars.count {
+                if chars[i - 1].isNumber && chars[i + 1].isNumber {
+                    continue
+                }
+            }
+            result.append(chars[i])
+        }
+
+        return result
+    }
+
+    // Обрабатывает запятые: десятичные → точки, разделители тысяч → удаление
+    private func convertDecimalCommas(_ str: String) -> String {
+        var result = ""
+        var i = str.startIndex
+
+        while i < str.endIndex {
+            let c = str[i]
+
+            if !c.isNumber && c != "," {
+                result.append(c)
+                i = str.index(after: i)
+                continue
+            }
+
+            var numStr = ""
+            while i < str.endIndex && (str[i].isNumber || str[i] == ",") {
+                numStr.append(str[i])
+                i = str.index(after: i)
+            }
+
+            if numStr.lastIndex(of: ",") != nil {
+                let lastCommaIdx = numStr.lastIndex(of: ",")!
+
+                // Проверяем: каждая запятая должна иметь ровно 3 символа
+                // между собой и следующей запятой (или концом строки)
+                var allHaveThreeDigits = true
+                var boundary = numStr.endIndex
+                // Собираем индексы запятых и проверяем от последней к первой
+                var commaIndices: [String.Index] = []
+                for idx in numStr.indices {
+                    if numStr[idx] == "," {
+                        commaIndices.append(idx)
+                    }
+                }
+                for commaIdx in commaIndices.reversed() {
+                    let afterIdx = numStr.index(after: commaIdx)
+                    let count = numStr.distance(from: afterIdx, to: boundary)
+                    if count != 3 {
+                        allHaveThreeDigits = false
+                        break
+                    }
+                    boundary = commaIdx
+                }
+
+                if allHaveThreeDigits {
+                    var cleanedNum = String(numStr)
+                    cleanedNum.removeAll(where: { $0 == "," })
+                    result.append(cleanedNum)
+                } else {
+                    var convertedNum = String(numStr)
+                    convertedNum.remove(at: lastCommaIdx)
+                    convertedNum.insert(".", at: lastCommaIdx)
+                    result.append(convertedNum)
+                }
+            } else {
+                result.append(numStr)
+            }
+        }
+
+        return result
+    }
+
     private func preprocess(_ input: String) throws -> String {
         var result = input
 
@@ -107,21 +186,13 @@ public struct Tokenizer: Sendable {
             throw CalculatorError.invalidExpression("Invalid expression")
         }
 
-        let comma = Character(",")
-        if trimmed.contains(comma) {
-            if !trimmed.contains(".") && isThousandsSeparatorPattern(trimmed) {
-                result.removeAll(where: { $0 == comma })
-            }
-        }
+        // Удалить пробелы между цифрами (разделители тысяч в формате "37 878")
+        result = removeThousandsSeparatorSpaces(result)
+
+        // Обработать запятые: десятичные → точки, разделители тысяч → удаление
+        result = convertDecimalCommas(result)
 
         return result.trimmingCharacters(in: .whitespaces)
-    }
-
-    private func isThousandsSeparatorPattern(_ str: String) -> Bool {
-        for c in str {
-            if !c.isNumber && c != "," { return false }
-        }
-        return true
     }
 
     /// Результат чтения числа.

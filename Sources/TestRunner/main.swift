@@ -126,6 +126,33 @@ struct TestRunnerMain {
         checkEqual(try! engine.evaluate("15+16+17+18"), 66, "15+16+17+18=66")
         checkEqual(try! engine.evaluate("5*-3"), -15, "5*-3=-15")
 
+        // MARK: - Тесты европейского формата чисел (разделители тысяч/десятичные запятые)
+
+        print("\n=== European Number Format Tests ===")
+
+        // Баговый кейс из задачи: выражение с пробелами-тысячными и десятичной запятой
+        checkEqual(try! engine.evaluate("42600 -37 878,07"), Decimal(string: "4721.93")!, "42600-37878.07=4721.93 (пробелы+запятая)")
+
+        // Пробелы как разделители тысяч в сложном выражении
+        checkEqual(try! engine.evaluate("1 000 + 2 500"), Decimal(string: "3500")!, "1000+2500=3500 (пробелы-тысячные)")
+
+        // Смешанный формат: пробел-тысячный + десятичная запятая
+        checkEqual(try! engine.evaluate("1 234,56 + 789"), Decimal(string: "2023.56")!, "1234.56+789=2023.56 (смешанный)")
+
+        // Только десятичная запятая без пробелов
+        checkEqual(try! engine.evaluate("37 878,07"), Decimal(string: "37878.07")!, "37878.07=37878.07 (запятая)")
+
+        // Разделители тысяч через запятую (без пробелов)
+        checkEqual(try! engine.evaluate("1,000+2,500"), Decimal(string: "3500")!, "1000+2500=3500 (запятые-тысячные)")
+
+        // Существующие тесты не должны сломаться
+        checkEqual(try! engine.evaluate("15+16"), 31, "Регрессия: 15+16=31")
+        checkEqual(try! engine.evaluate("1,000,000"), Decimal(string: "1000000")!, "Регрессия: 1,000,000=1000000")
+        checkEqual(try! engine.evaluate("3.1415*5"), Decimal(string: "15.7075")!, "Регрессия: 3.1415*5=15.7075")
+        checkEqual(try! engine.evaluate("(15+16+17+18)/4"), Decimal(string: "16.5")!, "Регрессия: (15+16+17+18)/4=16.5")
+        checkEqual(try! engine.evaluate("100+5%"), 105, "Регрессия: 100+5%=105")
+        checkEqual(try! engine.evaluate("100-5%"), 95, "Регрессия: 100-5%=95")
+
         // Error cases
         do { _ = try engine.evaluate("1/0"); check(false, "Engine: 1/0 should throw") } catch { check(true, "Engine: 1/0 throws") }
         do { _ = try engine.evaluate("15+a"); check(false, "Engine: 15+a should throw") } catch { check(true, "Engine: 15+a throws") }
