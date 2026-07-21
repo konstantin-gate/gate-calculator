@@ -124,7 +124,11 @@ final class CalculatorViewModel {
             expression = ""
             hasPreviousResult = true
         } catch {
-            errorMessage = error.localizedDescription
+            if let calcError = error as? CalculatorError {
+                errorMessage = calcError.localizedMessage
+            } else {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 
