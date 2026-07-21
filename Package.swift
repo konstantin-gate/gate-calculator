@@ -46,7 +46,8 @@ let package = Package(
                 "Extensions"
             ],
             resources: [
-                .process("Localization")
+                .process("Localization"),
+                .process("Resources")
             ]
         ),
         .executableTarget(

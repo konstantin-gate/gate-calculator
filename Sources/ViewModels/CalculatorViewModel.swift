@@ -34,12 +34,10 @@ final class CalculatorViewModel {
         return expression
     }
 
-    var historyCount: Int { historyService.count() }
+    /// Записи истории для HistoryPanelView
+    var historyEntries: [HistoryEntry] = HistoryService.shared.getEntries()
 
-    /// Записи истории — единый computed property для HistoryPanelView
-    var historyEntries: [HistoryEntry] {
-        historyService.getEntries()
-    }
+    var historyCount: Int { historyEntries.count }
 
     private var memoryValue: Decimal = 0
 
@@ -117,7 +115,7 @@ final class CalculatorViewModel {
             let formatted = formatter.format(value)
 
             // Всегда добавляем в историю успешные вычисления
-            historyService.add(expression: expression, result: value)
+            saveToHistory(expression: expression, result: value)
 
             result = formatted
             resultDecimal = value
@@ -316,7 +314,7 @@ final class CalculatorViewModel {
         let sqrtDouble = Foundation.sqrt(doubleValue)
         let sqrtDecimal = Decimal(floatLiteral: sqrtDouble)
 
-        historyService.add(expression: "√(\(expression.isEmpty ? formatter.format(value) : expression))", result: sqrtDecimal)
+        saveToHistory(expression: "√(\(expression.isEmpty ? formatter.format(value) : expression))", result: sqrtDecimal)
 
         result = formatter.format(sqrtDecimal)
         resultDecimal = sqrtDecimal
@@ -336,7 +334,7 @@ final class CalculatorViewModel {
 
         let squared = value * value
 
-        historyService.add(expression: "(\(expression.isEmpty ? formatter.format(value) : expression))²", result: squared)
+        saveToHistory(expression: "(\(expression.isEmpty ? formatter.format(value) : expression))²", result: squared)
 
         result = formatter.format(squared)
         resultDecimal = squared
@@ -389,7 +387,7 @@ final class CalculatorViewModel {
             result = formatter.format(value)  // Показать результат
             resultDecimal = value
             hasPreviousResult = true
-            historyService.add(expression: trimmed, result: value)
+            saveToHistory(expression: trimmed, result: value)
         } else {
             errorMessage = localizedString("clipboard.cannotEvaluate", comment: "")
         }
@@ -409,9 +407,15 @@ final class CalculatorViewModel {
         tryAutoEvaluate()
     }
 
+    private func saveToHistory(expression: String, result: Decimal) {
+        historyService.add(expression: expression, result: result)
+        historyEntries = historyService.getEntries()
+    }
+
     /// Очищает историю вычислений
     func clearHistory() {
         historyService.clear()
+        historyEntries = []
     }
 
     // MARK: - Private helpers
