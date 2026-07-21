@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <clipPath id="squircle">
+      <rect x="0" y="0" width="1024" height="1024" rx="162" ry="162"/>
+    </clipPath>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8734A"/>
+      <stop offset="100%" stop-color="#F4A67A"/>
+    </linearGradient>
+    <linearGradient id="glassGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.12)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.06)"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="18" flood-color="rgba(120,50,20,0.25)"/>
+    </filter>
+    <filter id="innerGlow">
+      <feComponentTransfer in="SourceAlpha">
+        <feFuncA type="linear" slope="0.15"/>
+      </feComponentTransfer>
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle background -->
+  <rect x="0" y="0" width="1024" height="1024" rx="162" ry="162" fill="url(#bgGrad)" clip-path="url(#squircle)"/>
+
+  <!-- Subtle grain overlay (optional) -->
+  <rect x="0" y="0" width="1024" height="1024" rx="162" ry="162" fill="url(#bgGrad)" clip-path="url(#squircle)" opacity="0.03" filter="url(#grain)" />
+
+  <!-- Symbol group -->
+  <g filter="url(#shadow)" clip-path="url(#squircle)">
+    <!-- Gate/portal arch -->
+    <path d="M 380 620 L 380 380 Q 380 300 512 280 Q 644 300 644 380 L 644 620" 
+          fill="none" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <!-- Equals sign (two horizontal bars) -->
+    <line x1="360" y1="460" x2="664" y2="460" stroke="white" stroke-width="32" stroke-linecap="round" opacity="0.95"/>
+    <line x1="360" y1="540" x2="664" y2="540" stroke="white" stroke-width="32" stroke-linecap="round" opacity="0.95"/>
+    <!-- Frosted glass overlay -->
+    <path d="M 360 280 Q 512 260 664 280 L 644 620 L 380 620 Z" fill="url(#glassGrad)" opacity="0.4"/>
+  </g>
+
+  <!-- Inner glow edge -->
+  <rect x="0" y="0" width="1024" height="1024" rx="162" ry="162" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="4" clip-path="url(#squircle)"/>
+</svg>

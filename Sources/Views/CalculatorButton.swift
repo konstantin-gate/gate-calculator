@@ -145,8 +145,11 @@ struct CalculatorButton: View {
     let fontSize: CGFloat
     let spacing: CGFloat        // расстояние между кнопками, для wide-кнопки "0"
     let onTap: (ButtonLabel) -> Void
+    let expression: String      // текущее выражение из ViewModel (для onChange сброса isClearHolding)
 
     @State private var isPressed = false
+    @State private var isClearHolding = false   // true = long-press переключил C → AC
+    @State private var longPressConsumed = false // true = long-press обработан, тап пропускается
     @State private var isHovered = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -168,11 +171,19 @@ struct CalculatorButton: View {
     }
 
     private var displayText: String {
-        // Динамическая метка: кнопка .clear показывает "AC" когда isAC == true
-        if case .clear = spec.label, spec.isAC {
+        // Приоритет отображения: isClearHolding (long-press) > spec.isAC (expression пуст) > default label.displayTitle
+        if case .clear = spec.label, isClearHolding || spec.isAC {
             return "AC"
         }
         return spec.label.displayTitle
+    }
+
+    private var accessibilityLabelText: String {
+        // Динамическая метка для VoiceOver: при long-press на .clear — «Очистить всё»
+        if case .clear = spec.label, isClearHolding {
+            return "Очистить всё"
+        }
+        return spec.accessibilityLabelOverride ?? spec.label.accessibilityDescription
     }
 
     // MARK: - Визуальные свойства кнопок
@@ -204,42 +215,36 @@ struct CalculatorButton: View {
         // Широкая кнопка "0": диаметр × 2 + spacing
         let targetWidth: CGFloat = spec.isWide ? diameter * 2 + spacing : diameter
 
-        Button {
-            guard spec.isEnabled else { return }
-            onTap(spec.label)
-        } label: {
-            Group {
-                if let icon = spec.iconOverride ?? spec.label.iconSystemName {
-                    Image(systemName: icon)
-                        .font(.system(size: fontSize, weight: .regular))
-                        .minimumScaleFactor(0.55)
-                        .lineLimit(1)
-                        .foregroundStyle(foregroundColor)
-                } else {
-                    Text(displayText)
-                        .font(.system(size: fontSize, weight: .regular))
-                        .minimumScaleFactor(0.55)
-                        .lineLimit(1)
-                        .foregroundStyle(foregroundColor)
-                }
-            }
-            .frame(width: targetWidth, height: diameter)
-            .background(
-                isPressed
-                    ? CalculatorColors.pressedColor(for: backgroundColor)
-                    : backgroundColor
-            )
-            .clipShape(
-                AnyShape(RoundedRectangle(cornerRadius: buttonCornerRadius))
-            )
-            .overlay {
-                if hasBorder && !spec.isWide {
-                    RoundedRectangle(cornerRadius: buttonCornerRadius)
-                        .stroke(borderColor, lineWidth: 1.0)
-                }
+        Group {
+            if let icon = spec.iconOverride ?? spec.label.iconSystemName {
+                Image(systemName: icon)
+                    .font(.system(size: fontSize, weight: .regular))
+                    .minimumScaleFactor(0.55)
+                    .lineLimit(1)
+                    .foregroundStyle(foregroundColor)
+            } else {
+                Text(displayText)
+                    .font(.system(size: fontSize, weight: .regular))
+                    .minimumScaleFactor(0.55)
+                    .lineLimit(1)
+                    .foregroundStyle(foregroundColor)
             }
         }
-        .buttonStyle(.plain)
+        .frame(width: targetWidth, height: diameter)
+        .background(
+            isPressed
+                ? CalculatorColors.pressedColor(for: backgroundColor)
+                : backgroundColor
+        )
+        .clipShape(
+            AnyShape(RoundedRectangle(cornerRadius: buttonCornerRadius))
+        )
+        .overlay {
+            if hasBorder && !spec.isWide {
+                RoundedRectangle(cornerRadius: buttonCornerRadius)
+                    .stroke(borderColor, lineWidth: 1.0)
+            }
+        }
         .overlay(alignment: .bottomTrailing) {
             if spec.hasMemoryIndicator {
                 Circle()
@@ -265,12 +270,48 @@ struct CalculatorButton: View {
             reduceMotion ? nil : .easeOut(duration: 0.08),
             value: isPressed
         )
+        // Long-press: ТОЛЬКО визуально показать «AC» (без вызова clear())
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.5)
+                .onEnded { _ in
+                    if case .clear = spec.label {
+                        isClearHolding = true
+                        longPressConsumed = true
+                    }
+                }
+        )
+        // Сброс long-press при любом изменении expression (ввод, удаление, клавиатура, история)
+        .onChange(of: expression) { _, _ in
+            isClearHolding = false
+        }
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded   { _ in isPressed = false }
+                .onChanged { _ in
+                    isPressed = true
+                    longPressConsumed = false
+                }
+                .onEnded { _ in
+                    isPressed = false
+
+                    // Логика обработки тапа (перенесена из удалённого .onTapGesture)
+                    guard spec.isEnabled else { return }
+
+                    // Длинное нажатие уже обработано LongPressGesture — пропускаем действие
+                    if longPressConsumed {
+                        longPressConsumed = false
+                        return
+                    }
+
+                    // Long-press переключил C → AC: обычный тап вызывает clear() (через .clearAll)
+                    if case .clear = spec.label, isClearHolding {
+                        isClearHolding = false
+                        onTap(.clearAll)
+                    } else {
+                        onTap(spec.label)
+                    }
+                }
         )
-        .accessibilityLabel(spec.accessibilityLabelOverride ?? spec.label.accessibilityDescription)
+        .accessibilityLabel(accessibilityLabelText)
         .accessibilityAddTraits(.isButton)
         .accessibilityHint(spec.accessibilityLabelOverride ?? spec.label.accessibilityDescription)
         .accessibilityIdentifier("calc_btn_\(displayText.replacingOccurrences(of: "/", with: "div"))")

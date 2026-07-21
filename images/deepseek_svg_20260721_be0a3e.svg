@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <clipPath id="squircle">
+      <rect x="0" y="0" width="1024" height="1024" rx="162" ry="162"/>
+    </clipPath>
+    <linearGradient id="bgGrad" x1="0.1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#EF7A52"/>
+      <stop offset="100%" stop-color="#F5C0A0"/>
+    </linearGradient>
+    <linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.22)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.05)"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="rgba(90,35,10,0.25)"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1024" height="1024" rx="162" ry="162" fill="url(#bgGrad)" clip-path="url(#squircle)"/>
+
+  <rect x="0" y="0" width="1024" height="1024" rx="162" ry="162" fill="url(#bgGrad)" clip-path="url(#squircle)" opacity="0.03"/>
+
+  <g filter="url(#shadow)" clip-path="url(#squircle)">
+    <!-- Compact arch (taller, narrower) -->
+    <path d="M 410 620 L 410 400 Q 410 310 512 290 Q 614 310 614 400 L 614 620" 
+          fill="none" stroke="white" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <!-- Arched equals – top bar slightly curved -->
+    <path d="M 390 460 Q 512 440 634 460" fill="none" stroke="white" stroke-width="32" stroke-linecap="round" opacity="0.95"/>
+    <line x1="390" y1="540" x2="634" y2="540" stroke="white" stroke-width="32" stroke-linecap="round" opacity="0.95"/>
+    <!-- Frosted glass overlay -->
+    <path d="M 390 290 Q 512 270 634 290 L 614 620 L 410 620 Z" fill="url(#glassGrad)" opacity="0.5"/>
+  </g>
+
+  <rect x="0" y="0" width="1024" height="1024" rx="162" ry="162" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="3" clip-path="url(#squircle)"/>
+</svg>

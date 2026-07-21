@@ -83,7 +83,7 @@ struct CalculatorView: View {
                 ButtonSpec(label: .closeParen,     type: .function),
                 clipboardSpec,
                 ButtonSpec(label: .backspace,      type: .function),
-                ButtonSpec(label: isAC ? .clearAll : .clear, type: .function),
+                ButtonSpec(label: isAC ? .clearAll : .clear, type: .function, isAC: isAC),
             ])
             // Ряд 2: память и деление
             buttonRow([
@@ -133,14 +133,9 @@ struct CalculatorView: View {
     private func buttonRow(_ specs: [ButtonSpec]) -> some View {
         HStack(spacing: buttonSpacing) {
             ForEach(specs) { spec in
-                CalculatorButton(
-                    spec: spec,
-                    diameter: buttonDiameter,
-                    fontSize: buttonFontSize,
-                    spacing: buttonSpacing
-                ) { label in
+                CalculatorButton(spec: spec, diameter: buttonDiameter, fontSize: buttonFontSize, spacing: buttonSpacing, onTap: { label in
                     handleButtonPress(label)
-                }
+                }, expression: viewModel.expression)
             }
         }
     }
