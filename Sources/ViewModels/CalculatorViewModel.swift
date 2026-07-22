@@ -1,5 +1,4 @@
 import Foundation
-import SwiftUI
 import Observation
 import CalculatorEngine
 
@@ -50,7 +49,11 @@ final class CalculatorViewModel {
         }
         let trimmed = expression.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return nil }
-        return try? engine.evaluate(trimmed)
+        do {
+            return try engine.evaluate(trimmed)
+        } catch {
+            return nil
+        }
     }
 
     /// Есть ли непустое значение в памяти (используется UI для визуальной индикации)
@@ -382,14 +385,19 @@ final class CalculatorViewModel {
 
         clearCurrentInput()
 
-        if let value = try? engine.evaluate(trimmed) {
+        do {
+            let value = try engine.evaluate(trimmed)
             expression = trimmed      // Показать выражение пользователю
             result = formatter.format(value)  // Показать результат
             resultDecimal = value
             hasPreviousResult = true
             saveToHistory(expression: trimmed, result: value)
-        } else {
-            errorMessage = localizedString("clipboard.cannotEvaluate", comment: "")
+        } catch {
+            if let calcError = error as? CalculatorError {
+                errorMessage = calcError.localizedMessage
+            } else {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 
