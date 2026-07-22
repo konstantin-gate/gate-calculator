@@ -6,6 +6,7 @@ struct DisplayView: View {
     let errorMessage: String?
 
     @State private var shakeOffset: CGFloat = 0
+    @State private var resultOpacity: Double = 1.0
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -61,6 +62,15 @@ struct DisplayView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                         .truncationMode(.middle)
+                        .opacity(resultOpacity)
+                        .onChange(of: result) { _, newResult in
+                            guard newResult != nil else { return }
+                            // Анимация flash при результате: плавное изменение opacity 1.0 -> 0.6 -> 1.0
+                            resultOpacity = 0.6
+                            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.085)) {
+                                resultOpacity = 1.0
+                            }
+                        }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)

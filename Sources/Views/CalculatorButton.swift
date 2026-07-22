@@ -123,7 +123,7 @@ struct ButtonSpec: Identifiable {
     let id = UUID()
     let label: ButtonLabel
     let type: CalcButtonType
-    var isWide: Bool = false   // true только для кнопки "0"
+    var isWide: Bool = false   // true для широких кнопок (например, "=")
     var isEnabled: Bool = true
     var hasMemoryIndicator: Bool = false
     var memoryTooltip: String? = nil

@@ -52,9 +52,9 @@ struct KeyHandlerView: NSViewRepresentable {
         // NSEventLocalMonitor перехватывает ⌘C на уровне run loop,
         // независимо от first responder. Возвращает nil для ⌘C (перехват),
         // все остальные события передаются дальше.
-        view.eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+        view.eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak view] event in
             if event.modifierFlags.contains(.command), event.charactersIgnoringModifiers == "c" {
-                view.viewModel?.copyResult()
+                view?.viewModel?.copyResult()
                 return nil
             }
             return event
@@ -74,7 +74,13 @@ struct KeyHandlerView: NSViewRepresentable {
 @MainActor
 class KeyHandlerNSView: NSView {
     weak var viewModel: CalculatorViewModel?
-    internal var eventMonitor: Any?
+    nonisolated(unsafe) internal var eventMonitor: Any?
+
+    deinit {
+        if let monitor = eventMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
+    }
 
     override func keyDown(with event: NSEvent) {
         guard let viewModel else { return }
