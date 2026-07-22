@@ -25,7 +25,6 @@
 "errors.invalidCharacter" = "Invalid character";
 "errors.numberOverflow" = "Number too large";
 "errors.invalidNumber" = "Invalid number";
-"errors.multipleDecimalSeparators" = "Multiple decimal separators";
 
 /* Errors (additional) */
 "errors.negativeSquareRoot" = "Square root of negative number";

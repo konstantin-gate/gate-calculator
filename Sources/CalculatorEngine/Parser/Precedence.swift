@@ -4,7 +4,6 @@ enum Precedence: Int, Sendable {
     case addition = 1
     case multiplication = 2
     case unaryMinus = 3
-    case percent = 4
 }
 
 extension BinaryOperator {

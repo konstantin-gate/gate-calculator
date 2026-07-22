@@ -91,22 +91,6 @@ final class CalculatorViewModel {
         }
     }
 
-    /// Этот метод больше не вызывается из UI, оставлен для совместимости
-    func appendOperator(_ op: String) {
-        clearError()
-
-        if hasResult {
-            if let dec = resultDecimal {
-                expression = dec.description + op
-            }
-            result = nil
-            resultDecimal = nil
-        } else {
-            expression += op
-        }
-        result = nil
-    }
-
     func evaluate() {
         clearError()
 

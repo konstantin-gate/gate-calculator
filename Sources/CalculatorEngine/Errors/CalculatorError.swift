@@ -32,9 +32,6 @@ public enum CalculatorError: Error, LocalizedError, Sendable {
     /// Двойной оператор (например, "5++3").
     case doubleOperator
 
-    /// Несколько десятичных разделителей (например, "1.5.3").
-    case multipleDecimalSeparators
-
     /// Человекочитаемое описание ошибки.
     public var errorDescription: String? {
         switch self {
@@ -56,8 +53,6 @@ public enum CalculatorError: Error, LocalizedError, Sendable {
             return NSLocalizedString("errors.invalidNumber", comment: "") + ": \(num)"
         case .doubleOperator:
             return NSLocalizedString("errors.doubleOperator", comment: "")
-        case .multipleDecimalSeparators:
-            return NSLocalizedString("errors.multipleDecimalSeparators", comment: "")
         }
     }
 }

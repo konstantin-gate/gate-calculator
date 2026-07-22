@@ -1,5 +1,4 @@
 import Foundation
-import SwiftUI
 
 private let resourceBundle: Bundle = {
     Bundle.module

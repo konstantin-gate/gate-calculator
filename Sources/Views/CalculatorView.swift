@@ -145,11 +145,7 @@ struct CalculatorView: View {
     private func handleButtonPress(_ label: ButtonLabel) {
         switch label {
         case .clear:
-            if isAC {
-                viewModel.clear()
-            } else {
-                viewModel.clearCurrentInput()
-            }
+            viewModel.clearCurrentInput()
         case .clearAll:
             viewModel.clear()
         case .clipboard:

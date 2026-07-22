@@ -25,7 +25,6 @@
 "errors.invalidCharacter" = "Неверный символ";
 "errors.numberOverflow" = "Число слишком большое";
 "errors.invalidNumber" = "Неверное число";
-"errors.multipleDecimalSeparators" = "Несколько десятичных разделителей";
 
 /* Ошибки (дополнительные) */
 "errors.negativeSquareRoot" = "Корень из отрицательного числа";

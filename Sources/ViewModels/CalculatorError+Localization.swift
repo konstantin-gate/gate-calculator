@@ -29,8 +29,6 @@ extension CalculatorError {
             return localizedString("errors.invalidNumber", comment: "") + ": \(num)"
         case .doubleOperator:
             return localizedString("errors.doubleOperator", comment: "")
-        case .multipleDecimalSeparators:
-            return localizedString("errors.multipleDecimalSeparators", comment: "")
         }
     }
 }
