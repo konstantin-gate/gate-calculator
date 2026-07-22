@@ -41,9 +41,7 @@ let package = Package(
                 "History",
                 "Clipboard",
                 "Formatting",
-                "Theme",
-                "Components",
-                "Extensions"
+                "Theme"
             ],
             resources: [
                 .process("Localization"),
@@ -59,6 +57,11 @@ let package = Package(
             name: "CalculatorTests",
             dependencies: ["CalculatorEngine", "CalculatorApp"],
             path: "Tests/Unit"
+        ),
+        .testTarget(
+            name: "CalculatorUITests",
+            dependencies: ["CalculatorApp"],
+            path: "Tests/UI"
         ),
     ]
 )
