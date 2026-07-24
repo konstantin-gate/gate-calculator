@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/readme/hero.svg" width="100%" alt="GateCalc — Нативный macOS-калькулятор на Swift 6.0 и SwiftUI с точными вычислениями до 38 значащих цифр">
+  <img src="./assets/readme/hero.svg" width="100%" alt="GateCalc — Native macOS Calculator on Swift 6.0 and SwiftUI with exact calculations up to 38 significant digits">
 </p>
 
 <p align="center">
@@ -8,56 +8,61 @@
   <a href="https://www.swift.org/package-manager/"><img src="https://img.shields.io/badge/SPM-ready-green!style=flat-square" alt="Swift Package Manager"></a>
 </p>
 
-## Что это
+<p align="center">
+  <a href="README.ru.md" title="Russian version"><img src="https://img.shields.io/badge/ru-%D0%A0%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9-red?style=flat-square" alt="Русская версия"></a>
+  <a href="README.cs.md" title="Czech version"><img src="https://img.shields.io/badge/cs-Čeština-yellow?style=flat-square" alt="Czech version"></a>
+</p>
 
-Нативный калькулятор для macOS, вдохновлённый Calculator.app из macOS Tahoe. Написан на Swift 6.0 с использованием SwiftUI и архитектуры MVVM — вычислительный движок отделён от UI и полностью потокобезопасен (`Sendable`).
+## What it is
 
-## Почему не обычный калькулятор
+A native macOS calculator inspired by Calculator.app from macOS Tahoe, built with Swift 6.0 and SwiftUI using the MVVM architecture — the calculation engine is separated from the UI and fully thread-safe (`Sendable`).
 
-| Особенность | GateCalc | Обычные калькуляторы |
+## Why not just another calculator
+
+| Feature | GateCalc | Regular calculators |
 |---|---|---|
-| Точность | Decimal (128-бит, до 38 значащих цифр) | Double / Float (64-бит, ~15 цифр) |
-| Относительный % | `100 + 5%` = 105 | Только абсолютный: `100 × 5%` = 5 |
-| Системы счисления | HEX (`0xFF`), BIN (`0b1010`), OCT (`0o77`) | Только десятичные |
-| История вычислений | До 50 записей, восстановление в дисплей | Нет |
-| Память | MC / M+ / M− / MR с индикаторами | Есть (не всегда) |
+| Accuracy | Decimal (128-bit, up to 38 significant digits) | Double / Float (64-bit, ~15 digits) |
+| Relative % | `100 + 5%` = 105 | Only absolute: `100 × 5%` = 5 |
+| Number systems | HEX (`0xFF`), BIN (`0b1010`), OCT (`0o77`) | Decimal only |
+| Calculation history | Up to 50 entries, restore to display | None |
+| Memory | MC / M+ / M− / MR with indicators | Some (not always) |
 
-## Возможности
+## Features
 
-### Базовая арифметика
+### Basic arithmetic
 
-Сложение, вычитание, умножение и деление с точными вычислениями (тип `Decimal`, до 38 значащих цифр). Поддержка приоритетов операторов и вложенных скобок:
+Addition, subtraction, multiplication and division with exact calculations (`Decimal` type, up to 38 significant digits). Support for operator precedence and nested parentheses:
 
 ```
 (15 + 25) × (3 − 1) = 80
 ((10 / 2) + 3) × 4 = 32
 ```
 
-### Проценты
+### Percentages
 
-Поддержка как абсолютного, так и относительного процента:
+Support for both absolute and relative percentages:
 
-- `100 × 5%` = **5** (абсолютный)
-- `100 + 5%` = **105** (относительный — как в Windows Calculator)
+- `100 × 5%` = **5** (absolute)
+- `100 + 5%` = **105** (relative — like in Windows Calculator)
 
-### Функциональные кнопки
+### Function buttons
 
-- **Квадратный корень (√)** — извлечение корня из неотрицательного числа
-- **Возведение в квадрат (x²)** — точное вычисление через Decimal
+- **Square root (√)** — square root of non-negative numbers
+- **Square (x²)** — exact calculation via Decimal
 
-### Форматы чисел
+### Number formats
 
-| Система | Примеры |
+| System | Examples |
 |---|---|
-| Шестнадцатеричный | `0xFF`, `0XAB` |
-| Двоичный | `0b1010` |
-| Восьмеричный | `0o77` |
-| Экспоненциальная запись | `1.5e3`, `1.5e−2` |
-| Разделители тысяч | пробелы (`37 878`) и запятые (`1,000,000`) |
+| Hexadecimal | `0xFF`, `0XAB` |
+| Binary | `0b1010` |
+| Octal | `0o77` |
+| Exponential notation | `1.5e3`, `1.5e−2` |
+| Thousands separators | spaces (`37 878`) and commas (`1,000,000`) |
 
-### Скобки
+### Parentheses
 
-Полная поддержка круглых скобок для управления порядком вычислений, включая вложенные:
+Full support for parentheses to control calculation order, including nested ones:
 
 ```
 (2 + 3) × (4 − 1) = 15
@@ -66,29 +71,29 @@
 
 ### Copy / Paste
 
-- **Копирование результата** — кнопка на панели или ⌘C
-- **Вставка выражения из буфера** — кнопка на панели или ⌘V; вставленное выражение автоматически вычисляется
+- **Copy result** — button on the panel or ⌘C
+- **Paste expression from clipboard** — button on the panel or ⌘V; pasted expression is automatically calculated
 
-### Память
+### Memory
 
-Операции MC, M+, M−, MR для сохранения и восстановления промежуточных значений.
+MC, M+, M−, MR operations for saving and restoring intermediate values.
 
-### История вычислений
+### Calculation history
 
-Все успешные вычисления сохраняются в истории (до 50 записей). Каждую запись можно восстановить — выражение и результат подставляются обратно на дисплей.
+All successful calculations are saved in the history (up to 50 entries). Each entry can be restored — expression and result are placed back on the display.
 
-## Клавиатура
+## Keyboard shortcuts
 
-| Клавиша | Действие |
+| Key | Action |
 |---|---|
-| `Escape` | Полная очистка (AC) |
-| `Backspace` | Удаление последнего символа |
-| `Return` / `Enter` | Вычислить (=) |
-| Цифры, операторы `+`, `-`, `*`, `/`, скобки, `%` | Ввод с клавиатуры |
-| ⌘C | Копировать результат |
-| ⌘V | Вставить из буфера обмена |
+| `Escape` | Full clear (AC) |
+| `Backspace` | Delete last character |
+| `Return` / `Enter` | Calculate (=) |
+| Digits, operators `+`, `-`, `*`, `/`, parentheses, `%` | Keyboard input |
+| ⌘C | Copy result |
+| ⌘V | Paste from clipboard |
 
-## Архитектура
+## Architecture
 
 ```
 ┌─────────────┐    ┌───────────────┐    ┌──────────────┐
@@ -96,55 +101,55 @@
 │   Views      │    │ @Observable   │    │  Engine      │
 │              │    │               │    │ Sendable     │
 └─────────────┘    └───────────────┘    └──────────────┘
-                          ▲                    ▲
-                          │                    │
-                   ┌──────┴──────┐      ┌───────┴───────┐
-                   │  Services   │      │ Tokenizer     │
-                   │ History     │      │ Parser        │
-                   │ Clipboard   │      │ Evaluator     │
-                   └─────────────┘      └───────────────┘
+                           ▲                    ▲
+                           │                    │
+                    ┌──────┴──────┐      ┌───────┴───────┐
+                    │  Services   │      │ Tokenizer     │
+                    │ History     │      │ Parser        │
+                    │ Clipboard   │      │ Evaluator     │
+                    └─────────────┘      └───────────────┘
 ```
 
-- **Views** — SwiftUI компоненты (дисплей, кнопки, история)
-- **ViewModel** (`@MainActor @Observable`) — состояние приложения, ввод/вычисление/память
-- **CalculatorEngine** (`Sendable`) — потокобезопасный движок: Tokenizer → Parser (Shunting Yard) → Evaluator
+- **Views** — SwiftUI components (display, buttons, history)
+- **ViewModel** (`@MainActor @Observable`) — app state, input/calculation/memory
+- **CalculatorEngine** (`Sendable`) — thread-safe engine: Tokenizer → Parser (Shunting Yard) → Evaluator
 
-## Сборка
+## Building
 
-Проект использует Swift Package Manager. Для сборки выполните:
+The project uses Swift Package Manager. To build, run:
 
 ```bash
 swift build
 ```
 
-Для запуска консольного тестера вычислительного движка:
+To run the console tester for the calculation engine:
 
 ```bash
 swift run CalculatorApp
 ```
 
-## Структура проекта
+## Project structure
 
 ```
 Sources/
-├── App/                    — Точка входа, обработчик клавиатуры
-├── Views/                  — UI-компоненты (дисплей, кнопки, история)
-├── ViewModels/             — Логика приложения (ввод, вычисление, память)
-├── Services/               — Сервисы (история)
-├── CalculatorEngine/       — Вычислительный движок (токенизатор, парсер, evaluator)
-│   ├── Tokenizer/          — Токенизатор (Tokenizer, Token, BinaryOperator)
-│   ├── Parser/             — Парсер (Parser, Precedence)
+├── App/                    — Entry point, keyboard handler
+├── Views/                  — UI components (display, buttons, history)
+├── ViewModels/             — App logic (input, calculation, memory)
+├── Services/               — Services (history)
+├── CalculatorEngine/       — Calculator engine (tokenizer, parser, evaluator)
+│   ├── Tokenizer/          — Tokenizer (Tokenizer, Token, BinaryOperator)
+│   ├── Parser/             — Parser (Parser, Precedence)
 │   ├── AST/                — AST (ExpressionNode)
-│   ├── Evaluator/          — Вычислитель (Evaluator)
-│   └── Errors/             — Ошибки (CalculatorError)
-├── Clipboard/              — Буфер обмена
-├── Formatting/             — Форматирование чисел
-├── Theme/                  — Цветовая схема
-├── History/                — Модель записи истории
-└── TestRunner/             — Консольный тестер (executable target)
+│   ├── Evaluator/          — Evaluator
+│   └── Errors/             — Errors (CalculatorError)
+├── Clipboard/              — Clipboard
+├── Formatting/             — Number formatting
+├── Theme/                  — Color scheme
+├── History/                — History entry model
+└── TestRunner/             — Console tester (executable target)
 
 Tests/
-├── Unit/                   — Юнит-тесты (CalculatorTests)
+├── Unit/                   — Unit tests (CalculatorTests)
 │   ├── EvaluatorTests.swift
 │   ├── TokenizerTests.swift
 │   ├── ParserTests.swift
@@ -152,10 +157,10 @@ Tests/
 │   ├── CalculatorViewModelTests.swift
 │   ├── HistoryServiceTests.swift
 │   └── NumberFormatterServiceTests.swift
-└── UI/                     — UI-тесты (CalculatorUITests, требуют Xcode)
+└── UI/                     — UI tests (CalculatorUITests, require Xcode)
     └── CalculatorUITests.swift
 ```
 
-## Лицензия
+## License
 
-© 2026 GateCalc. Все права защищены.
+© 2026 GateCalc. All rights reserved.
