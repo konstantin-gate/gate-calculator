@@ -24,6 +24,7 @@ public struct NumberFormatterService: Sendable {
         exponentialFormatter.locale = usLocale
         exponentialFormatter.maximumFractionDigits = 10
         exponentialFormatter.minimumFractionDigits = 0
+        exponentialFormatter.exponentSymbol = "e"
     }
 
     public func format(_ value: Decimal) -> String {
@@ -32,9 +33,7 @@ public struct NumberFormatterService: Sendable {
         if absValue >= Decimal(string: "1e12") ?? .zero ||
             (absValue < Decimal(string: "0.000001") ?? .zero && absValue != 0) {
             if let formatted = exponentialFormatter.string(from: value as NSDecimalNumber) {
-                // ИСПРАВЛЕНИЕ S-13: case-insensitive замена "E+" → "" и "E-" → "e-"
-                return formatted.replacingOccurrences(of: "E+", with: "", options: .caseInsensitive)
-                    .replacingOccurrences(of: "E-", with: "e-", options: .caseInsensitive)
+                return formatted
             }
         }
 

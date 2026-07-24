@@ -63,20 +63,20 @@ final class NumberFormatterServiceTests: XCTestCase {
     func testFormat_Exponential_ThresholdAt1e12() {
         let value = Decimal(string: "1e12")!
         let result = NumberFormatterService.shared.format(value)
-        XCTAssertTrue(result.contains("E"))
+        XCTAssertTrue(result.contains("e"))
         XCTAssertFalse(result.contains(" "))
     }
 
     func testFormat_Exponential_LargeNumber() {
         let value = Decimal(string: "1234567890123")!
         let result = NumberFormatterService.shared.format(value)
-        XCTAssertTrue(result.contains("E"))
+        XCTAssertTrue(result.contains("e"))
     }
 
     func testFormat_Exponential_VeryLargeNumber() {
         let value = Decimal(string: "1e20")!
         let result = NumberFormatterService.shared.format(value)
-        XCTAssertTrue(result.contains("E"))
+        XCTAssertTrue(result.contains("e"))
     }
 
     // MARK: - Экспоненциальный формат (малые числа)
@@ -99,7 +99,7 @@ final class NumberFormatterServiceTests: XCTestCase {
     func testFormat_Boundary_Exactly1e12() {
         let value = Decimal(string: "1000000000000")!
         let result = NumberFormatterService.shared.format(value)
-        XCTAssertTrue(result.contains("E"))
+        XCTAssertTrue(result.contains("e"))
     }
 
     func testFormat_Boundary_JustBelow1e12() {

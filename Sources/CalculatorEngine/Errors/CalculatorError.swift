@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Перечисление описывает все возможные ошибки, которые могут возникнуть
 /// при разборе и вычислении математического выражения.
-public enum CalculatorError: Error, LocalizedError, Sendable {
+public enum CalculatorError: Error, Sendable {
     /// Деление на ноль.
     case divisionByZero
 
@@ -31,28 +31,4 @@ public enum CalculatorError: Error, LocalizedError, Sendable {
 
     /// Двойной оператор (например, "5++3").
     case doubleOperator
-
-    /// Человекочитаемое описание ошибки.
-    public var errorDescription: String? {
-        switch self {
-        case .divisionByZero:
-            return NSLocalizedString("errors.divisionByZero", comment: "")
-        case .invalidExpression(let msg):
-            return NSLocalizedString(msg, comment: "")
-        case .missingClosingParenthesis:
-            return NSLocalizedString("errors.missingParenthesis", comment: "")
-        case .extraClosingParenthesis:
-            return NSLocalizedString("errors.extraParenthesis", comment: "")
-        case .invalidCharacter(let char):
-            return NSLocalizedString("errors.invalidCharacter", comment: "") + ": \(char)"
-        case .emptyExpression:
-            return NSLocalizedString("errors.emptyExpression", comment: "")
-        case .numberOverflow:
-            return NSLocalizedString("errors.numberOverflow", comment: "")
-        case .invalidNumber(let num):
-            return NSLocalizedString("errors.invalidNumber", comment: "") + ": \(num)"
-        case .doubleOperator:
-            return NSLocalizedString("errors.doubleOperator", comment: "")
-        }
-    }
 }

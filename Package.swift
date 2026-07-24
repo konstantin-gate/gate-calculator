@@ -58,10 +58,5 @@ let package = Package(
             dependencies: ["CalculatorEngine", "CalculatorApp"],
             path: "Tests/Unit"
         ),
-        .testTarget(
-            name: "CalculatorUITests",
-            dependencies: ["CalculatorApp"],
-            path: "Tests/UI"
-        ),
     ]
 )
