@@ -63,4 +63,116 @@ public struct CalculatorEngine: Sendable {
 
         return x
     }
+
+    // MARK: - Анализ выражений
+
+    /// Проверяет, является ли выражение простым термином.
+    ///
+    /// Простой термин — это выражение, содержащее только числа, унарный минус
+    /// и оператор процента без бинарных операторов и скобок.
+    ///
+    /// Допустимые паттерны:
+    /// - `[.number]` — например, `5`, `3.14`
+    /// - `[.unaryMinus, .number]` — например, `-5`
+    /// - `[.number, .percent]` — например, `5%`
+    /// - `[.unaryMinus, .number, .percent]` — например, `-5%`
+    ///
+    /// - Parameter expression: Строка с математическим выражением.
+    /// - Returns: `true` если выражение является простым термином.
+    /// - Throws: `CalculatorError` если токенизация не удалась.
+    public func isSimpleTerm(_ expression: String) throws -> Bool {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize(expression)
+
+        // Проверка на наличие недопустимых токенов (бинарные операторы, скобки)
+        for token in tokens {
+            switch token {
+            case .number, .unaryMinus, .percent:
+                break
+            default:
+                return false
+            }
+        }
+
+        if tokens.isEmpty { return false }
+
+        switch tokens.count {
+        case 1:
+            guard case .number = tokens[0] else { return false }
+            return true
+        case 2:
+            switch (tokens[0], tokens[1]) {
+            case (.unaryMinus, .number): return true
+            case (.number, .percent): return true
+            default: return false
+            }
+        case 3:
+            switch (tokens[0], tokens[1], tokens[2]) {
+            case (.unaryMinus, .number, .percent): return true
+            default: return false
+            }
+        default:
+            return false
+        }
+    }
+
+    /// Проверяет, обёрнуто ли выражение в `-(выражение)`.
+    ///
+    /// Возвращает внутреннее выражение, если обёртка найдена и корректна.
+    /// Корректная обёртка: начинается с `-(`, содержит сбалансированные скобки,
+    /// закрывается ровно на последнем символе.
+    ///
+    /// - Parameter expression: Строка для проверки.
+    /// - Returns: Внутреннее выражение без обёртки, или `nil` если обёртки нет.
+    public static func isWrappedNegativeExpression(_ expression: String) -> String? {
+        guard expression.hasPrefix("-(") else { return nil }
+
+        let openParenIndex = expression.index(expression.startIndex, offsetBy: 1)
+        var balance = 1
+        var currentIndex = expression.index(after: openParenIndex)
+
+        while currentIndex < expression.endIndex {
+            let char = expression[currentIndex]
+            if char == "(" {
+                balance += 1
+            } else if char == ")" {
+                balance -= 1
+                if balance == 0 {
+                    let endIndex = expression.index(after: currentIndex)
+                    guard endIndex == expression.endIndex else { return nil }
+                    let innerStart = expression.index(expression.startIndex, offsetBy: 2)
+                    let innerEnd = currentIndex
+                    return String(expression[innerStart..<innerEnd])
+                }
+            }
+            currentIndex = expression.index(after: currentIndex)
+        }
+
+        return nil
+    }
+
+    /// Проверяет, заканчивается ли выражение оператором.
+    ///
+    /// - Parameter expression: Строка для проверки.
+    /// - Returns: `true` если последний символ — `+`, `-`, `*`, `/` или `%`.
+    public static func isTrailingOperator(_ expression: String) -> Bool {
+        guard let last = expression.last else { return false }
+        return last == "+" || last == "-" || last == "*" || last == "/" || last == "%"
+    }
+
+    /// Проверяет, есть ли в выражении незакрытые открывающие скобки.
+    ///
+    /// - Parameter expression: Строка для проверки.
+    /// - Returns: `true` если количество `(` превышает количество `)`.
+    public static func hasUnclosedParentheses(_ expression: String) -> Bool {
+        var count = 0
+        for char in expression where char == "(" || char == ")" {
+            if char == "(" {
+                count += 1
+            } else {
+                count -= 1
+            }
+        }
+        return count > 0
+    }
 }

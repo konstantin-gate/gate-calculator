@@ -60,8 +60,6 @@ struct KeyHandlerView: NSViewRepresentable {
             return event
         }
 
-        // ⌘C также обрабатывается в performKeyEquivalent как fallback,
-        // когда монитор не перехватывает событие (например, при потере first responder).
         return view
     }
 
@@ -76,7 +74,7 @@ class KeyHandlerNSView: NSView {
     weak var viewModel: CalculatorViewModel?
     nonisolated(unsafe) internal var eventMonitor: Any?
 
-    deinit {
+    nonisolated deinit {
         if let monitor = eventMonitor {
             NSEvent.removeMonitor(monitor)
         }
@@ -121,10 +119,6 @@ class KeyHandlerNSView: NSView {
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         let cmd = event.modifierFlags.contains(.command)
 
-        if cmd, event.charactersIgnoringModifiers == "c" {
-            viewModel?.copyResult()
-            return true
-        }
         if cmd, event.charactersIgnoringModifiers == "v" {
             if let text = ClipboardManager.shared.getString() {
                 viewModel?.insertFromClipboard(text)

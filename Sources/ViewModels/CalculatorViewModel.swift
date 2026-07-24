@@ -223,58 +223,81 @@ final class CalculatorViewModel {
     /// Инвертирует знак текущего числа/выражения
     func toggleSign() {
         if expression.isEmpty {
-            if let val = resultDecimal {
-                let negated = -val
-                expression = negated.description
-                self.resultDecimal = nil
-                self.result = nil
-                hasPreviousResult = false
-            }
+            toggleSignOfResult()
+        } else if let isSimple = try? engine.isSimpleTerm(expression), isSimple {
+            expression = toggleSimpleTermSign(expression)
         } else {
-            // 1. Проверка на обёрнутое отрицательное выражение: -(выражение)
-            if let inner = isWrappedNegativeExpression(expression) {
-                expression = inner
-            } else if isSimpleTerm(expression) {
-                // 2. Простой термин (число, константа, процент, унарный минус + число)
-                if expression.hasPrefix("-") {
-                    expression = String(expression.dropFirst())
-                } else {
-                    expression = "-" + expression
-                }
-            } else {
-                // 3. Сложное выражение
-                if expression.hasPrefix("-") {
-                    // Выражение начинается с -, но не является простым термином и не обёрнуто в -(...)
-                    let trimmed = expression.trimmingCharacters(in: .whitespaces)
-                    guard !trimmed.isEmpty, !isTrailingOperator(expression), !hasUnclosedParentheses(trimmed) else {
-                        // Краевой случай: выражение состоит только из "-" или "+"
-                        if trimmed == "-" || trimmed == "+" {
-                            expression = ""
-                            errorMessage = nil
-                            return
-                        }
-                        expression = "-(\(expression))"
-                        errorMessage = nil
-                        return
-                    }
-                    
-                    do {
-                        let value = try engine.evaluate(expression)
-                        let negated = -value
-                        expression = negated.description
-                        self.resultDecimal = nil
-                        self.result = nil
-                        hasPreviousResult = false
-                    } catch {
-                        expression = "-(\(expression))"
-                    }
-                } else {
-                    // Не начинается с -, оборачиваем в -(выражение)
-                    expression = "-(\(expression))"
-                }
-            }
+            expression = toggleComplexExpressionSign(expression)
         }
         errorMessage = nil
+    }
+
+    /// Инвертирует знак результата вычисления.
+    /// Вызывается, когда expression пуст, но есть resultDecimal.
+    /// После инверсии записывает новое значение в expression,
+    /// сбрасывает result/resultDecimal/hasPreviousResult.
+    private func toggleSignOfResult() {
+        guard let val = resultDecimal else { return }
+        let negated = -val
+        expression = negated.description
+        self.resultDecimal = nil
+        self.result = nil
+        hasPreviousResult = false
+    }
+
+    /// Инвертирует знак простого термина (число, унарный минус+число, процент).
+    /// - Parameter expression: Текущее выражение (не пустое, является простым термином).
+    /// - Returns: Выражение с инвертированным знаком.
+    private func toggleSimpleTermSign(_ expression: String) -> String {
+        if expression.hasPrefix("-") {
+            return String(expression.dropFirst())
+        } else {
+            return "-" + expression
+        }
+    }
+
+    /// Инвертирует знак сложного выражения.
+    ///
+    /// Логика:
+    /// 1. Если выражение обёрнуто в -(выражение) — снимает обёртку.
+    /// 2. Если выражение начинается с "-" и является вычислимым
+    ///    (не заканчивается оператором, нет незакрытых скобок) —
+    ///    вычисляет результат и инвертирует его.
+    /// 3. Если выражение начинается с "-" но не вычислимое —
+    ///    оборачивает в -(выражение).
+    /// 4. Если выражение не начинается с "-" — оборачивает в -(выражение).
+    ///
+    /// - Parameter expression: Текущее выражение (не пустое, не простой термин).
+    /// - Returns: Выражение с инвертированным знаком.
+    private func toggleComplexExpressionSign(_ expression: String) -> String {
+        // Обёрнутое отрицание: -(выражение) → выражение
+        if let inner = CalculatorEngine.isWrappedNegativeExpression(expression) {
+            return inner
+        }
+
+        if expression.hasPrefix("-") {
+            let trimmed = expression.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty,
+                  !CalculatorEngine.isTrailingOperator(expression),
+                  !CalculatorEngine.hasUnclosedParentheses(trimmed) else {
+                // Краевой случай: выражение состоит только из "-" или "+"
+                if trimmed == "-" || trimmed == "+" {
+                    return ""
+                }
+                return "-(\(expression))"
+            }
+
+            do {
+                let value = try engine.evaluate(expression)
+                let negated = -value
+                return negated.description
+            } catch {
+                return "-(\(expression))"
+            }
+        } else {
+            // Не начинается с -, оборачиваем в -(выражение)
+            return "-(\(expression))"
+        }
     }
 
     // MARK: - Функциональные вычисления (√, x²)
@@ -345,7 +368,7 @@ final class CalculatorViewModel {
         clearError()
         let memStr = memoryValue.description
 
-        if !expression.isEmpty && isTrailingOperator(expression) {
+        if !expression.isEmpty && CalculatorEngine.isTrailingOperator(expression) {
             expression += memStr
         } else {
             expression = memStr
@@ -406,86 +429,9 @@ final class CalculatorViewModel {
         historyEntries = []
     }
 
-    // MARK: - Private helpers
-
-    private func isSimpleTerm(_ expression: String) -> Bool {
-        let tokenizer = Tokenizer()
-        do {
-            let tokens = try tokenizer.tokenize(expression)
-            
-            // Проверка на наличие недопустимых токенов (бинарные операторы, скобки)
-            for token in tokens {
-                switch token {
-                case .number, .unaryMinus, .percent:
-                    break
-                default:
-                    return false // binaryOperator, leftParenthesis, rightParenthesis не допускаются в простом термине
-                }
-            }
-            
-            if tokens.isEmpty { return false }
-            
-            // Допустимые паттерны простого термина:
-            // 1. [.number]
-            // 2. [.unaryMinus, .number]
-            // 3. [.number, .percent]
-            // 4. [.unaryMinus, .number, .percent]
-            
-            switch tokens.count {
-            case 1:
-                guard case .number = tokens[0] else { return false }
-                return true
-            case 2:
-                switch (tokens[0], tokens[1]) {
-                case (.unaryMinus, .number): return true
-                case (.number, .percent): return true
-                default: return false
-                }
-            case 3:
-                switch (tokens[0], tokens[1], tokens[2]) {
-                case (.unaryMinus, .number, .percent): return true
-                default: return false
-                }
-            default:
-                return false
-            }
-        } catch {
-            return false
-        }
-    }
-
-    private func isWrappedNegativeExpression(_ expression: String) -> String? {
-        guard expression.hasPrefix("-(") else { return nil }
-        
-        // Открывающая скобка '(' находится на индексе 1 (после '-')
-        let openParenIndex = expression.index(expression.startIndex, offsetBy: 1)
-        var balance = 1
-        var currentIndex = expression.index(after: openParenIndex)
-        
-        while currentIndex < expression.endIndex {
-            let char = expression[currentIndex]
-            if char == "(" {
-                balance += 1
-            } else if char == ")" {
-                balance -= 1
-                if balance == 0 {
-                    // Найдена закрывающая скобка, соответствующая открывающей после "-("
-                    let endIndex = expression.index(after: currentIndex)
-                    guard endIndex == expression.endIndex else { return nil } // Выражение должно заканчиваться здесь
-                    let innerStart = expression.index(expression.startIndex, offsetBy: 2) // после "-("
-                    let innerEnd = currentIndex
-                    return String(expression[innerStart..<innerEnd])
-                }
-            }
-            currentIndex = expression.index(after: currentIndex)
-        }
-        
-        return nil // Не найдена закрывающая скобка с балансом 0
-    }
-
     private func tryAutoEvaluate() {
         let trimmed = expression.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty, !isTrailingOperator(expression), !hasUnclosedParentheses(trimmed) else { return }
+        guard !trimmed.isEmpty, !CalculatorEngine.isTrailingOperator(expression), !CalculatorEngine.hasUnclosedParentheses(trimmed) else { return }
 
         do {
             let value = try engine.evaluate(expression)
@@ -493,15 +439,22 @@ final class CalculatorViewModel {
             resultDecimal = value
             hasPreviousResult = true
         } catch {
-            // Ошибки автовычисления не показываются пользователю —
-            // выражение в процессе набора может быть неполным.
-            // Ошибки отображаются только при явном нажатии "=" (метод evaluate()).
+            // ОСОЗНАННЫЙ ПРОПУСК ОШИБОК:
+            // Автовычисление вызывается при вводе каждого оператора (метод appendCharacter)
+            // и при восстановлении записи истории (метод useHistoryEntry).
+            // В процессе набора выражение часто бывает неполным (например, "5+"),
+            // и вызов evaluate() на таком выражении выбросит CalculatorError.
+            //
+            // Эти ошибки НЕ должны показываться пользователю, потому что:
+            // 1. Пользователь ещё не завершил ввод выражения.
+            // 2. Отображение ошибок при наборе создаёт UX-шум и сбивает.
+            // 3. Истинная ошибка будет показана при явном нажатии "=" (метод evaluate()).
+            //
+            // Альтернативы рассмотрены и отклонены:
+            // - Показывать ошибки → создаёт UX-шум при наборе.
+            // - Пробрасывать ошибки → нарушает UX (автовычисление прозрачно для пользователя).
+            // - Использовать флаг → избыточная сложность без benefit.
         }
-    }
-
-    private func isTrailingOperator(_ expr: String) -> Bool {
-        guard let last = expr.last else { return false }
-        return last == "+" || last == "-" || last == "*" || last == "/" || last == "%"
     }
 
     private func isOperator(_ char: String) -> Bool {
@@ -514,19 +467,5 @@ final class CalculatorViewModel {
 
     private func isDigitOrDecimal(_ char: String) -> Bool {
         return char == "." || (char.count == 1 && char.first?.isNumber == true)
-    }
-
-    /// Проверяет, есть ли в выражении незакрытые открывающие скобки.
-    /// Возвращает true, если количество '(' превышает количество ')'.
-    private func hasUnclosedParentheses(_ expr: String) -> Bool {
-        var count = 0
-        for char in expr where char == "(" || char == ")" {
-            if char == "(" {
-                count += 1
-            } else {
-                count -= 1
-            }
-        }
-        return count > 0
     }
 }

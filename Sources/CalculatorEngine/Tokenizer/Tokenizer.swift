@@ -76,7 +76,13 @@ public struct Tokenizer: Sendable {
             }
 
             if char.isNumber || char == "." {
-                guard let result = try? readNumber(cleaned, from: i), let number = result.number else {
+                let result: ReadNumberResult
+                do {
+                    result = try readNumber(cleaned, from: i)
+                } catch {
+                    throw error
+                }
+                guard let number = result.number else {
                     throw CalculatorError.invalidCharacter(String(char))
                 }
                 tokens.append(.number(number))
