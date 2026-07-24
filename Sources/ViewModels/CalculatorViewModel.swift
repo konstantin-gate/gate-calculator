@@ -280,9 +280,8 @@ final class CalculatorViewModel {
     // MARK: - Функциональные вычисления (√, x²)
 
     /// Вычисляет квадратный корень из текущего значения на дисплее.
-    /// Использует цепочку: Decimal → Double → Foundation.sqrt() → Decimal(floatLiteral:).
-    /// Это единственный корректный способ вычислить √ для Decimal в Swift Foundation,
-    /// т.к. ни Decimal, ни NSDecimalNumber не имеют встроенного метода squareRoot().
+    /// Использует метод Ньютона (Герона) для итеративного вычисления
+    /// квадратного корня напрямую через тип Decimal.
     func calculateSquareRoot() {
         clearError()
 
@@ -296,10 +295,7 @@ final class CalculatorViewModel {
             return
         }
 
-        // Цепочка преобразования: Decimal → Double → sqrt → Decimal
-        let doubleValue = NSDecimalNumber(decimal: value).doubleValue
-        let sqrtDouble = Foundation.sqrt(doubleValue)
-        let sqrtDecimal = Decimal(floatLiteral: sqrtDouble)
+        let sqrtDecimal = CalculatorEngine.newtonSquareRoot(value)
 
         saveToHistory(expression: "√(\(expression.isEmpty ? formatter.format(value) : expression))", result: sqrtDecimal)
 

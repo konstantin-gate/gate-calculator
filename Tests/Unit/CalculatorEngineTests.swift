@@ -298,4 +298,57 @@ final class CalculatorEngineTests: XCTestCase {
             XCTAssertNil(result, "Should fail for: \(expression)")
         }
     }
+
+    // MARK: - Newton Square Root Tests
+
+    func testNewtonSquareRoot_Zero() {
+        let result = CalculatorEngine.newtonSquareRoot(0)
+        XCTAssertEqual(result, 0, "√0 должен быть равен 0")
+    }
+
+    func testNewtonSquareRoot_One() {
+        let result = CalculatorEngine.newtonSquareRoot(1)
+        XCTAssertEqual(result, 1, "√1 должен быть равен 1")
+    }
+
+    func testNewtonSquareRoot_Four() {
+        let result = CalculatorEngine.newtonSquareRoot(4)
+        XCTAssertEqual(result, 2, "√4 должен быть равен 2")
+    }
+
+    func testNewtonSquareRoot_Two() {
+        let result = CalculatorEngine.newtonSquareRoot(2)
+        let expected = Decimal(string: "1.414213562373095048801688724")!
+        XCTAssertEqual(result, expected, accuracy: Decimal(string: "1e-26")!, "√2 с высокой точностью")
+    }
+
+    func testNewtonSquareRoot_PointTwoFive() {
+        let result = CalculatorEngine.newtonSquareRoot(Decimal(string: "0.25")!)
+        XCTAssertEqual(result, Decimal(string: "0.5")!, "√0.25 должен быть равен 0.5")
+    }
+
+    func testNewtonSquareRoot_Hundred() {
+        let result = CalculatorEngine.newtonSquareRoot(100)
+        XCTAssertEqual(result, 10, "√100 должен быть равен 10")
+    }
+
+    func testNewtonSquareRoot_E12() {
+        let value = Decimal(string: "1e12")!
+        let result = CalculatorEngine.newtonSquareRoot(value)
+        XCTAssertEqual(result, Decimal(string: "1e6")!, "√1e12 должен быть равен 1e6")
+    }
+
+    func testNewtonSquareRoot_SquareVerification() {
+        let values: [Decimal] = [0, 1, 4, 9, 16, 25, 50, 100, 200, 1000, Decimal(string: "1e12")!, Decimal(string: "0.01")!]
+        for value in values {
+            let sqrt = CalculatorEngine.newtonSquareRoot(value)
+            let squared = sqrt * sqrt
+            let diff = abs(squared - value)
+            XCTAssertLessThan(diff, Decimal(string: "1e-26")!, "Квадрат √\(value) должен быть близок к исходному значению")
+        }
+    }
+
+    private func abs(_ value: Decimal) -> Decimal {
+        value < 0 ? -value : value
+    }
 }

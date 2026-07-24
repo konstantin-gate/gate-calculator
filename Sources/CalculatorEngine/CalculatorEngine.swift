@@ -39,4 +39,28 @@ public struct CalculatorEngine: Sendable {
         let evaluator = Evaluator()
         return try evaluator.evaluate(ast)
     }
+
+    // MARK: - Математические функции
+
+    /// Вычисляет квадратный корень методом Ньютона (Герона) для Decimal.
+    /// Квадратичная сходимость: не более 5–7 итераций для 28 значащих цифр.
+    ///
+    /// - Parameter value: Неотрицательное значение Decimal.
+    /// - Returns: Квадратный корень из value с точностью до 1e-28.
+    public static func newtonSquareRoot(_ value: Decimal) -> Decimal {
+        guard value != 0 else { return Decimal(0) }
+
+        var x = value >= 1 ? value : Decimal(1)
+        let epsilon = Decimal(string: "1e-28")!
+        let maxIterations = 100
+
+        for _ in 0..<maxIterations {
+            let nextX = (x + value / x) / 2
+            let diff = nextX > x ? nextX - x : x - nextX
+            x = nextX
+            if diff < epsilon { break }
+        }
+
+        return x
+    }
 }
