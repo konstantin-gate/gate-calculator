@@ -81,7 +81,10 @@ class KeyHandlerNSView: NSView {
     }
 
     override func keyDown(with event: NSEvent) {
-        guard let viewModel else { return }
+        guard let viewModel else {
+            super.keyDown(with: event)
+            return
+        }
 
         let code = event.keyCode
         let characters = event.charactersIgnoringModifiers ?? ""
@@ -101,18 +104,18 @@ class KeyHandlerNSView: NSView {
             viewModel.appendCharacter("-")
         case 69:        // Numpad +
             viewModel.appendCharacter("+")
-        case 48:        // Tab — ИСПРАВЛЕНИЕ S-11
-            // Tab / Shift+Tab: в текущей реализации фокус калькулятора
-            // (без полноценной keyboard navigation) — заглушка
-            break
+        case 48:        // Tab — передаём в responder chain (keyboard navigation)
+            super.keyDown(with: event)
         default:
             if !characters.isEmpty {
                 let char = characters.first ?? " "
                 if char.isNumber || "+-*/().%,".contains(char) {
                     let normalized = char == "," ? "." : String(char)
                     viewModel.appendCharacter(normalized)
+                    return
                 }
             }
+            super.keyDown(with: event)
         }
     }
 
@@ -120,9 +123,7 @@ class KeyHandlerNSView: NSView {
         let cmd = event.modifierFlags.contains(.command)
 
         if cmd, event.charactersIgnoringModifiers == "v" {
-            if let text = ClipboardManager.shared.getString() {
-                viewModel?.insertFromClipboard(text)
-            }
+            viewModel?.handleClipboardAction()
             return true
         }
         // ИСПРАВЛЕНИЕ S-10: ⌘A и ⌘Z

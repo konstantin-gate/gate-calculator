@@ -16,6 +16,8 @@ public final class HistoryService: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
 
+        guard maxEntries > 0 else { return }
+
         let entry = HistoryEntry(expression: expression, result: result)
         entries.insert(entry, at: 0)
 

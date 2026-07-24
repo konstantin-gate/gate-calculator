@@ -53,6 +53,20 @@ final class HistoryServiceTests: XCTestCase {
         XCTAssertEqual(service.getEntries()[2].expression, "1")
     }
 
+    func testAdd_MaxEntriesZero_NeverStoresEntries() {
+        let service = HistoryService(maxEntries: 0)
+        service.add(expression: "1+1", result: Decimal(2))
+        XCTAssertEqual(service.count(), 0)
+        XCTAssertTrue(service.getEntries().isEmpty)
+    }
+
+    func testAdd_MaxEntriesNegative_NeverStoresEntries() {
+        let service = HistoryService(maxEntries: -1)
+        service.add(expression: "2+2", result: Decimal(4))
+        XCTAssertEqual(service.count(), 0)
+        XCTAssertTrue(service.getEntries().isEmpty)
+    }
+
     // MARK: - Тесты очистки
 
     func testClear_EmptyHistory_NoCrash() {

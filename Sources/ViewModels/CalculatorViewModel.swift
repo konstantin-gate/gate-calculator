@@ -12,9 +12,10 @@ final class CalculatorViewModel {
     private var hasPreviousResult = false
     var errorMessage: String? = nil
 
-    private let engine = CalculatorEngine()
-    private let historyService = HistoryService.shared
-    private let formatter = NumberFormatterService.shared
+    private let engine: CalculatorEngine
+    private let historyService: HistoryService
+    private let formatter: NumberFormatterService
+    private let clipboardManager: ClipboardManager
 
     var hasResult: Bool { resultDecimal != nil }
 
@@ -65,8 +66,17 @@ final class CalculatorViewModel {
         return formatter.format(memoryValue)
     }
 
-    /// Инициализация ViewModel. Заполняет историю из сервиса.
-    init() {
+    /// Инициализация ViewModel с инъекцией зависимостей.
+    init(
+        engine: CalculatorEngine = CalculatorEngine(),
+        historyService: HistoryService = HistoryService.shared,
+        formatter: NumberFormatterService = NumberFormatterService.shared,
+        clipboardManager: ClipboardManager = ClipboardManager.shared
+    ) {
+        self.engine = engine
+        self.historyService = historyService
+        self.formatter = formatter
+        self.clipboardManager = clipboardManager
         historyEntries = historyService.getEntries()
     }
 
@@ -410,7 +420,16 @@ final class CalculatorViewModel {
     }
 
     func copyResult() {
-        ClipboardManager.shared.setString(displayValue)
+        clipboardManager.setString(displayValue)
+    }
+
+    // GC-01: единая точка обработки действий кнопки буфера обмена
+    func handleClipboardAction() {
+        if isClipboardPasteMode, let text = clipboardManager.getString() {
+            insertFromClipboard(text)
+        } else {
+            copyResult()
+        }
     }
 
     // MARK: - History

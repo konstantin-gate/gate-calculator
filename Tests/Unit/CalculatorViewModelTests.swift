@@ -201,6 +201,46 @@ final class CalculatorViewModelTests: XCTestCase {
         XCTAssertNotNil(viewModel.errorMessage)
     }
 
+    // MARK: - Tests: handleClipboardAction (GC-01)
+
+    func testClipboardAction_EmptyState_PastesFromClipboard() {
+        let vm = createCleanViewModel()
+        ClipboardManager.shared.setString("123")
+        vm.handleClipboardAction()
+        XCTAssertEqual(vm.expression, "123")
+        XCTAssertNil(vm.errorMessage)
+    }
+
+    func testClipboardAction_ExpressionZero_PastesFromClipboard() {
+        let vm = createCleanViewModel()
+        vm.appendCharacter("0")
+        ClipboardManager.shared.setString("456")
+        vm.handleClipboardAction()
+        XCTAssertEqual(vm.expression, "456")
+    }
+
+    func testClipboardAction_NonEmptyExpression_CopiesToClipboard() {
+        let vm = createCleanViewModel()
+        vm.appendCharacter("1")
+        vm.appendCharacter("+")
+        vm.appendCharacter("2")
+        ClipboardManager.shared.setString("789")
+        vm.handleClipboardAction()
+        XCTAssertEqual(vm.expression, "789")
+    }
+
+    func testClipboardAction_WithResult_CopiesToClipboard() {
+        let vm = createCleanViewModel()
+        vm.appendCharacter("2")
+        vm.appendCharacter("+")
+        vm.appendCharacter("3")
+        vm.evaluate()
+        vm.handleClipboardAction()
+        let clipboardContent = ClipboardManager.shared.getString()
+        XCTAssertNotNil(clipboardContent)
+        XCTAssertTrue(clipboardContent?.contains("5") ?? false)
+    }
+
     // MARK: - Базовое вычисление (Evaluate)
 
     func testEvaluate_SimpleAddition() {

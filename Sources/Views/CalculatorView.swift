@@ -149,13 +149,7 @@ struct CalculatorView: View {
         case .clearAll:
             viewModel.clear()
         case .clipboard:
-            if viewModel.displayValue != "0" {
-                viewModel.copyResult()
-            } else {
-                if let text = ClipboardManager.shared.getString() {
-                    viewModel.insertFromClipboard(text)
-                }
-            }
+            viewModel.handleClipboardAction()
         case .equals:
             viewModel.evaluate()
         case .backspace:
