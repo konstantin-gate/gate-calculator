@@ -51,8 +51,8 @@ public struct CalculatorEngine: Sendable {
         guard value != 0 else { return Decimal(0) }
 
         var x = value >= 1 ? value : Decimal(1)
-        let epsilon = Decimal(string: "1e-28")!
-        let maxIterations = 100
+        let epsilon = EngineConstants.epsilon
+        let maxIterations = EngineConstants.maxNewtonIterations
 
         for _ in 0..<maxIterations {
             let nextX = (x + value / x) / 2

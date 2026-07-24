@@ -142,7 +142,7 @@ public struct Parser: Sendable {
                 guard let value = stack.popLast() else {
                     throw CalculatorError.invalidExpression("Invalid expression")
                 }
-                let hundred = Decimal(string: "100")!
+                let hundred = EngineConstants.hundred
                 stack.append(.binary(.divide, value, .number(hundred)))
 
             case .percentRelative(let op, let percentValue):

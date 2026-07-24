@@ -41,7 +41,7 @@ public struct Evaluator: Sendable {
             // Относительный %: left + (left × p/100) для .add
             //                 left - (left × p/100) для .subtract
             let l = try evaluate(left)
-            let hundred = Decimal(string: "100")!
+            let hundred = EngineConstants.hundred
             let percent = percentValue / hundred
 
             switch op {
