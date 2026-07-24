@@ -34,7 +34,7 @@ final class CalculatorViewModel {
     }
 
     /// Записи истории для HistoryPanelView
-    var historyEntries: [HistoryEntry] = HistoryService.shared.getEntries()
+    var historyEntries: [HistoryEntry] = []
 
     var historyCount: Int { historyEntries.count }
 
@@ -63,6 +63,11 @@ final class CalculatorViewModel {
     var memoryDisplayValue: String? {
         guard memoryValue != 0 else { return nil }
         return formatter.format(memoryValue)
+    }
+
+    /// Инициализация ViewModel. Заполняет историю из сервиса.
+    init() {
+        historyEntries = historyService.getEntries()
     }
 
     func appendCharacter(_ char: String) {

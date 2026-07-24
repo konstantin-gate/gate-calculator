@@ -30,8 +30,14 @@ extension Token {
             return 2   // На уровне × и ÷
         case .unaryMinus:
             return 3   // Выше, чем × и ÷ — чтобы "5*-3" парсилось как "5*(-3)"
-        default:
-            return 1   // На уровне + и −
+        case .number:
+            return 1   // Не оператор, приоритет = 1 (на уровне + и −)
+        case .leftParenthesis:
+            return 1   // Скобка, приоритет = 1 (для сортировочной станции)
+        case .rightParenthesis:
+            return 1   // Закрывающая скобка, приоритет = 1 (для сортировочной станции)
+        case .percentRelative:
+            return 1   // Относительный процент — не-оператор, приоритет = 1 (как в default)
         }
     }
 
@@ -41,8 +47,14 @@ extension Token {
             return true
         case .unaryMinus:
             return false  // unary minus — right-associative (важно для "5*-3" = 5*(-3))
-        default:
-            return false
+        case .number:
+            return false  // Не оператор, не ассоциативен
+        case .leftParenthesis:
+            return false  // Скобка, не ассоциативна
+        case .rightParenthesis:
+            return false  // Закрывающая скобка, не ассоциативна
+        case .percentRelative:
+            return false  // Относительный процент — не-оператор, как в default
         }
     }
 

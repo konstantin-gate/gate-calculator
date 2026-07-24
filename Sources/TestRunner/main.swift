@@ -66,10 +66,14 @@ struct TestRunnerMain {
         check(t9.count == 4, "Unary minus: 4 tokens (unaryMinus, number, add, number)")
 
         // Tokenizer error cases
-        do { _ = try tokenizer.tokenize("15+a"); check(false, "Tokenizer: 15+a should throw") } catch { check(true, "Invalid character throws") }
-        do { _ = try tokenizer.tokenize("NaN"); check(false, "Tokenizer: NaN should throw") } catch { check(true, "NaN throws") }
-        do { _ = try tokenizer.tokenize("Infinity"); check(false, "Tokenizer: Infinity should throw") } catch { check(true, "Infinity throws") }
-        do { _ = try tokenizer.tokenize("5++3"); check(false, "Tokenizer: 5++3 should throw") } catch { check(true, "Double operator throws") }
+        do { _ = try tokenizer.tokenize("15+a"); check(false, "Tokenizer: 15+a should throw") 
+            } catch { check(true, "Invalid character throws") }
+        do { _ = try tokenizer.tokenize("NaN"); check(false, "Tokenizer: NaN should throw") 
+            } catch { check(true, "NaN throws") }
+        do { _ = try tokenizer.tokenize("Infinity"); check(false, "Tokenizer: Infinity should throw") 
+            } catch { check(true, "Infinity throws") }
+        do { _ = try tokenizer.tokenize("5++3"); check(false, "Tokenizer: 5++3 should throw") 
+            } catch { check(true, "Double operator throws") }
 
         let t12 = try! tokenizer.tokenize("1,000,000")
         if case .number(let v) = t12[0] { checkEqual(v, 1000000, "Thousands: 1,000,000 = 1000000") }
@@ -131,37 +135,54 @@ struct TestRunnerMain {
         print("\n=== European Number Format Tests ===")
 
         // Баговый кейс из задачи: выражение с пробелами-тысячными и десятичной запятой
-        checkEqual(try! engine.evaluate("42600 -37 878,07"), Decimal(string: "4721.93")!, "42600-37878.07=4721.93 (пробелы+запятая)")
+        checkEqual(try! engine.evaluate("42600 -37 878,07"), Decimal(string: "4721.93")!,
+                     "42600-37878.07=4721.93 (пробелы+запятая)")
 
         // Пробелы как разделители тысяч в сложном выражении
-        checkEqual(try! engine.evaluate("1 000 + 2 500"), Decimal(string: "3500")!, "1000+2500=3500 (пробелы-тысячные)")
+        checkEqual(try! engine.evaluate("1 000 + 2 500"), Decimal(string: "3500")!,
+                     "1000+2500=3500 (пробелы-тысячные)")
 
         // Смешанный формат: пробел-тысячный + десятичная запятая
-        checkEqual(try! engine.evaluate("1 234,56 + 789"), Decimal(string: "2023.56")!, "1234.56+789=2023.56 (смешанный)")
+        checkEqual(try! engine.evaluate("1 234,56 + 789"), Decimal(string: "2023.56")!,
+                     "1234.56+789=2023.56 (смешанный)")
 
         // Только десятичная запятая без пробелов
-        checkEqual(try! engine.evaluate("37 878,07"), Decimal(string: "37878.07")!, "37878.07=37878.07 (запятая)")
+        checkEqual(try! engine.evaluate("37 878,07"), Decimal(string: "37878.07")!,
+                     "37878.07=37878.07 (запятая)")
 
         // Разделители тысяч через запятую (без пробелов)
-        checkEqual(try! engine.evaluate("1,000+2,500"), Decimal(string: "3500")!, "1000+2500=3500 (запятые-тысячные)")
+        checkEqual(try! engine.evaluate("1,000+2,500"), Decimal(string: "3500")!,
+                     "1000+2500=3500 (запятые-тысячные)")
 
         // Существующие тесты не должны сломаться
-        checkEqual(try! engine.evaluate("15+16"), 31, "Регрессия: 15+16=31")
-        checkEqual(try! engine.evaluate("1,000,000"), Decimal(string: "1000000")!, "Регрессия: 1,000,000=1000000")
-        checkEqual(try! engine.evaluate("3.1415*5"), Decimal(string: "15.7075")!, "Регрессия: 3.1415*5=15.7075")
-        checkEqual(try! engine.evaluate("(15+16+17+18)/4"), Decimal(string: "16.5")!, "Регрессия: (15+16+17+18)/4=16.5")
+        checkEqual(try! engine.evaluate("15+16"), 31,
+                     "Регрессия: 15+16=31")
+        checkEqual(try! engine.evaluate("1,000,000"), Decimal(string: "1000000")!,
+                     "Регрессия: 1,000,000=1000000")
+        checkEqual(try! engine.evaluate("3.1415*5"), Decimal(string: "15.7075")!,
+                     "Регрессия: 3.1415*5=15.7075")
+        checkEqual(try! engine.evaluate("(15+16+17+18)/4"), Decimal(string: "16.5")!,
+                     "Регрессия: (15+16+17+18)/4=16.5")
         checkEqual(try! engine.evaluate("100+5%"), 105, "Регрессия: 100+5%=105")
         checkEqual(try! engine.evaluate("100-5%"), 95, "Регрессия: 100-5%=95")
 
         // Error cases
-        do { _ = try engine.evaluate("1/0"); check(false, "Engine: 1/0 should throw") } catch { check(true, "Engine: 1/0 throws") }
-        do { _ = try engine.evaluate("15+a"); check(false, "Engine: 15+a should throw") } catch { check(true, "Engine: 15+a throws") }
-        do { _ = try engine.evaluate("(15+16"); check(false, "Engine: (15+16 should throw") } catch { check(true, "Engine: (15+16 throws") }
-        do { _ = try engine.evaluate("15+16)"); check(false, "Engine: 15+16) should throw") } catch { check(true, "Engine: 15+16) throws") }
-        do { _ = try engine.evaluate("NaN"); check(false, "Engine: NaN should throw") } catch { check(true, "Engine: NaN throws") }
-        do { _ = try engine.evaluate("Infinity"); check(false, "Engine: Infinity should throw") } catch { check(true, "Engine: Infinity throws") }
-        do { _ = try engine.evaluate(""); check(false, "Engine: empty should throw") } catch { check(true, "Engine: empty throws") }
-        do { _ = try engine.evaluate("   "); check(false, "Engine: whitespace only should throw") } catch { check(true, "Engine: whitespace only throws") }
+        do { _ = try engine.evaluate("1/0"); check(false, "Engine: 1/0 should throw") 
+            } catch { check(true, "Engine: 1/0 throws") }
+        do { _ = try engine.evaluate("15+a"); check(false, "Engine: 15+a should throw") 
+            } catch { check(true, "Engine: 15+a throws") }
+        do { _ = try engine.evaluate("(15+16"); check(false, "Engine: (15+16 should throw") 
+            } catch { check(true, "Engine: (15+16 throws") }
+        do { _ = try engine.evaluate("15+16)"); check(false, "Engine: 15+16) should throw") 
+            } catch { check(true, "Engine: 15+16) throws") }
+        do { _ = try engine.evaluate("NaN"); check(false, "Engine: NaN should throw") 
+            } catch { check(true, "Engine: NaN throws") }
+        do { _ = try engine.evaluate("Infinity"); check(false, "Engine: Infinity should throw") 
+            } catch { check(true, "Engine: Infinity throws") }
+        do { _ = try engine.evaluate(""); check(false, "Engine: empty should throw") 
+            } catch { check(true, "Engine: empty throws") }
+        do { _ = try engine.evaluate("   "); check(false, "Engine: whitespace only should throw") 
+            } catch { check(true, "Engine: whitespace only throws") }
 
         // Main scenario from SRS
         print("\n=== SRS Main Scenario ===")
