@@ -66,13 +66,13 @@ struct TestRunnerMain {
         check(t9.count == 4, "Unary minus: 4 tokens (unaryMinus, number, add, number)")
 
         // Tokenizer error cases
-        do { _ = try tokenizer.tokenize("15+a"); check(false, "Tokenizer: 15+a should throw") 
+        do { _ = try tokenizer.tokenize("15+a"); check(false, "Tokenizer: 15+a should throw")
             } catch { check(true, "Invalid character throws") }
-        do { _ = try tokenizer.tokenize("NaN"); check(false, "Tokenizer: NaN should throw") 
+        do { _ = try tokenizer.tokenize("NaN"); check(false, "Tokenizer: NaN should throw")
             } catch { check(true, "NaN throws") }
-        do { _ = try tokenizer.tokenize("Infinity"); check(false, "Tokenizer: Infinity should throw") 
+        do { _ = try tokenizer.tokenize("Infinity"); check(false, "Tokenizer: Infinity should throw")
             } catch { check(true, "Infinity throws") }
-        do { _ = try tokenizer.tokenize("5++3"); check(false, "Tokenizer: 5++3 should throw") 
+        do { _ = try tokenizer.tokenize("5++3"); check(false, "Tokenizer: 5++3 should throw")
             } catch { check(true, "Double operator throws") }
 
         let t12 = try! tokenizer.tokenize("1,000,000")
@@ -167,21 +167,21 @@ struct TestRunnerMain {
         checkEqual(try! engine.evaluate("100-5%"), 95, "Регрессия: 100-5%=95")
 
         // Error cases
-        do { _ = try engine.evaluate("1/0"); check(false, "Engine: 1/0 should throw") 
+        do { _ = try engine.evaluate("1/0"); check(false, "Engine: 1/0 should throw")
             } catch { check(true, "Engine: 1/0 throws") }
-        do { _ = try engine.evaluate("15+a"); check(false, "Engine: 15+a should throw") 
+        do { _ = try engine.evaluate("15+a"); check(false, "Engine: 15+a should throw")
             } catch { check(true, "Engine: 15+a throws") }
-        do { _ = try engine.evaluate("(15+16"); check(false, "Engine: (15+16 should throw") 
+        do { _ = try engine.evaluate("(15+16"); check(false, "Engine: (15+16 should throw")
             } catch { check(true, "Engine: (15+16 throws") }
-        do { _ = try engine.evaluate("15+16)"); check(false, "Engine: 15+16) should throw") 
+        do { _ = try engine.evaluate("15+16)"); check(false, "Engine: 15+16) should throw")
             } catch { check(true, "Engine: 15+16) throws") }
-        do { _ = try engine.evaluate("NaN"); check(false, "Engine: NaN should throw") 
+        do { _ = try engine.evaluate("NaN"); check(false, "Engine: NaN should throw")
             } catch { check(true, "Engine: NaN throws") }
-        do { _ = try engine.evaluate("Infinity"); check(false, "Engine: Infinity should throw") 
+        do { _ = try engine.evaluate("Infinity"); check(false, "Engine: Infinity should throw")
             } catch { check(true, "Engine: Infinity throws") }
-        do { _ = try engine.evaluate(""); check(false, "Engine: empty should throw") 
+        do { _ = try engine.evaluate(""); check(false, "Engine: empty should throw")
             } catch { check(true, "Engine: empty throws") }
-        do { _ = try engine.evaluate("   "); check(false, "Engine: whitespace only should throw") 
+        do { _ = try engine.evaluate("   "); check(false, "Engine: whitespace only should throw")
             } catch { check(true, "Engine: whitespace only throws") }
 
         // Main scenario from SRS

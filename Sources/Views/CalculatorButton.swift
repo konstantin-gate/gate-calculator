@@ -85,24 +85,24 @@ enum ButtonLabel {
     /// Описание для VoiceOver / Accessibility
     var accessibilityDescription: String {
         switch self {
-        case .divide:              return "Разделить"
-        case .multiply:            return "Умножить"
-        case .subtract:            return "Минус"
-        case .add:                 return "Плюс"
-        case .equals:              return "Равно"
-        case .clear:               return "Очистить"
-        case .backspace:           return "Удалить последний символ"
-        case .plusMinus:           return "Изменить знак"
-        case .percent:             return "Процент"
-        case .decimalSeparator:    return "Десятичная запятая"
-        case .mc:                  return "Очистить память"
-        case .mPlus:               return "Добавить в память"
-        case .mMinus:              return "Вычесть из памяти"
-        case .mR:                  return "Вспомнить из памяти"
-        case .clearAll:            return "Очистить всё"
-        case .sqrt:                return "Квадратный корень"
-        case .square:              return "Возведение в квадрат"
-        case .clipboard:           return "Буфер обмена"
+        case .divide:              return localizedString("accessibility.divide", comment: "")
+        case .multiply:            return localizedString("accessibility.multiply", comment: "")
+        case .subtract:            return localizedString("accessibility.subtract", comment: "")
+        case .add:                 return localizedString("accessibility.add", comment: "")
+        case .equals:              return localizedString("accessibility.equals", comment: "")
+        case .clear:               return localizedString("accessibility.clear", comment: "")
+        case .backspace:           return localizedString("accessibility.backspace", comment: "")
+        case .plusMinus:           return localizedString("accessibility.plusMinus", comment: "")
+        case .percent:             return localizedString("accessibility.percent", comment: "")
+        case .decimalSeparator:    return localizedString("accessibility.decimalSeparator", comment: "")
+        case .mc:                  return localizedString("accessibility.mc", comment: "")
+        case .mPlus:               return localizedString("accessibility.mPlus", comment: "")
+        case .mMinus:              return localizedString("accessibility.mMinus", comment: "")
+        case .mR:                  return localizedString("accessibility.mR", comment: "")
+        case .clearAll:            return localizedString("accessibility.clearAll", comment: "")
+        case .sqrt:                return localizedString("accessibility.sqrt", comment: "")
+        case .square:              return localizedString("accessibility.square", comment: "")
+        case .clipboard:           return localizedString("accessibility.clipboard", comment: "")
         default:                   return displayTitle
         }
     }

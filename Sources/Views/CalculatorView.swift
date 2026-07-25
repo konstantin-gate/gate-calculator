@@ -90,7 +90,11 @@ struct CalculatorView: View {
                 ButtonSpec(label: .mc,             type: .function, isEnabled: viewModel.hasMemory),
                 ButtonSpec(label: .mPlus,          type: .function),
                 ButtonSpec(label: .mMinus,         type: .function),
-                ButtonSpec(label: .mR,             type: .function, isEnabled: viewModel.hasMemory, memoryTooltip: viewModel.memoryDisplayValue),
+                ButtonSpec(
+                    label: .mR, type: .function,
+                    isEnabled: viewModel.hasMemory,
+                    memoryTooltip: viewModel.memoryDisplayValue
+                ),
                 ButtonSpec(label: .divide,         type: .operator),
             ])
             // Ряд 3: %, +/−, √, x², ×
@@ -133,9 +137,13 @@ struct CalculatorView: View {
     private func buttonRow(_ specs: [ButtonSpec]) -> some View {
         HStack(spacing: buttonSpacing) {
             ForEach(specs) { spec in
-                CalculatorButton(spec: spec, diameter: buttonDiameter, fontSize: buttonFontSize, spacing: buttonSpacing, onTap: { label in
-                    handleButtonPress(label)
-                }, expression: viewModel.expression)
+                CalculatorButton(
+                    spec: spec, diameter: buttonDiameter,
+                    fontSize: buttonFontSize, spacing: buttonSpacing,
+                    onTap: { label in
+                        handleButtonPress(label)
+                    }, expression: viewModel.expression
+                )
             }
         }
     }

@@ -23,9 +23,6 @@ public enum CalculatorError: Error, Sendable {
     /// Пустое выражение.
     case emptyExpression
 
-    /// Число слишком большое для точного представления.
-    case numberOverflow
-
     /// Некорректное число с кастомным сообщением.
     case invalidNumber(String)
 

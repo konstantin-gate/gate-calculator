@@ -23,7 +23,6 @@
 "errors.doubleOperator" = "Двойной оператор";
 "errors.emptyExpression" = "Пустое выражение";
 "errors.invalidCharacter" = "Неверный символ";
-"errors.numberOverflow" = "Число слишком большое";
 "errors.invalidNumber" = "Неверное число";
 
 /* Ошибки (дополнительные) */
@@ -40,3 +39,29 @@
 
 /* Memory */
 "memory.tooltip" = "Память: ";
+
+/* Accessibility кнопок */
+"accessibility.divide" = "Разделить";
+"accessibility.multiply" = "Умножить";
+"accessibility.subtract" = "Минус";
+"accessibility.add" = "Плюс";
+"accessibility.equals" = "Равно";
+"accessibility.clear" = "Очистить";
+"accessibility.backspace" = "Удалить последний символ";
+"accessibility.plusMinus" = "Изменить знак";
+"accessibility.percent" = "Процент";
+"accessibility.decimalSeparator" = "Десятичная запятая";
+"accessibility.mc" = "Очистить память";
+"accessibility.mPlus" = "Добавить в память";
+"accessibility.mMinus" = "Вычесть из памяти";
+"accessibility.mR" = "Вспомнить из памяти";
+"accessibility.clearAll" = "Очистить всё";
+"accessibility.sqrt" = "Квадратный корень";
+"accessibility.square" = "Возведение в квадрат";
+"accessibility.clipboard" = "Буфер обмена";
+
+/* VoiceOver дисплея */
+"accessibility.error.prefix" = "Ошибка:";
+"accessibility.result.prefix" = "Результат:";
+"accessibility.zero" = "Ноль";
+"accessibility.expression.prefix" = "Выражение:";

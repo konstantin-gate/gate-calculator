@@ -23,8 +23,6 @@ extension CalculatorError {
             return localizedString("errors.invalidCharacter", comment: "") + ": \(char)"
         case .emptyExpression:
             return localizedString("errors.emptyExpression", comment: "")
-        case .numberOverflow:
-            return localizedString("errors.numberOverflow", comment: "")
         case .invalidNumber(let num):
             return localizedString("errors.invalidNumber", comment: "") + ": \(num)"
         case .doubleOperator:

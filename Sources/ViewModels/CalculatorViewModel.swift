@@ -9,7 +9,6 @@ final class CalculatorViewModel {
     var expression: String = ""
     var result: String? = nil
     internal var resultDecimal: Decimal? = nil
-    private var hasPreviousResult = false
     var errorMessage: String? = nil
 
     private let engine: CalculatorEngine
@@ -91,7 +90,6 @@ final class CalculatorViewModel {
             expression = ""
             result = nil
             resultDecimal = nil
-            hasPreviousResult = false
         } else if hasResult && isOperator(char) {
             if let dec = savedResultDecimal {
                 expression = dec.description
@@ -122,7 +120,6 @@ final class CalculatorViewModel {
             result = formatted
             resultDecimal = value
             expression = ""
-            hasPreviousResult = true
         } catch {
             if let calcError = error as? CalculatorError {
                 errorMessage = calcError.localizedMessage
@@ -137,7 +134,6 @@ final class CalculatorViewModel {
         result = nil
         resultDecimal = nil
         errorMessage = nil
-        hasPreviousResult = false
     }
 
     // MARK: - Очистка текущего ввода
@@ -172,11 +168,10 @@ final class CalculatorViewModel {
         // Режим «Активный набор» — удаляем последний операнд или оператор
         removeLastOperandOrOperator()
 
-        // Сбросить result/resultDecimal/hasPreviousResult,
+        // Сбросить result/resultDecimal,
         // чтобы DisplayView показал урезанное expression
         result = nil
         resultDecimal = nil
-        hasPreviousResult = false
     }
 
     /// Удаляет последний операнд (последовательность [0-9.]) или один последний символ-оператор/скобку.
@@ -218,7 +213,6 @@ final class CalculatorViewModel {
         clearError()
 
         if expression.isEmpty, resultDecimal != nil {
-            hasPreviousResult = false
             clear()
             return
         }
@@ -227,7 +221,6 @@ final class CalculatorViewModel {
             // Сбросить result/resultDecimal, чтобы DisplayView показал expression
             result = nil
             resultDecimal = nil
-            hasPreviousResult = false
             expression.removeLast()
             // tryAutoEvaluate() НЕ вызывается — автовычисление при backspace не нужно
         } else if hasResult {
@@ -250,14 +243,13 @@ final class CalculatorViewModel {
     /// Инвертирует знак результата вычисления.
     /// Вызывается, когда expression пуст, но есть resultDecimal.
     /// После инверсии записывает новое значение в expression,
-    /// сбрасывает result/resultDecimal/hasPreviousResult.
+    /// сбрасывает result/resultDecimal.
     private func toggleSignOfResult() {
         guard let val = resultDecimal else { return }
         let negated = -val
         expression = negated.description
         self.resultDecimal = nil
         self.result = nil
-        hasPreviousResult = false
     }
 
     /// Инвертирует знак простого термина (число, унарный минус+число, процент).
@@ -335,12 +327,12 @@ final class CalculatorViewModel {
 
         let sqrtDecimal = CalculatorEngine.newtonSquareRoot(value)
 
-        saveToHistory(expression: "√(\(expression.isEmpty ? formatter.format(value) : expression))", result: sqrtDecimal)
+        let sqrtExpression = "√(" + (expression.isEmpty ? formatter.format(value) : expression) + ")"
+        saveToHistory(expression: sqrtExpression, result: sqrtDecimal)
 
         result = formatter.format(sqrtDecimal)
         resultDecimal = sqrtDecimal
         expression = ""
-        hasPreviousResult = true
     }
 
     /// Возводит текущее значение на дисплее в квадрат.
@@ -360,7 +352,6 @@ final class CalculatorViewModel {
         result = formatter.format(squared)
         resultDecimal = squared
         expression = ""
-        hasPreviousResult = true
     }
 
     // MARK: - Memory operations (SRS §39-43)
@@ -391,7 +382,6 @@ final class CalculatorViewModel {
 
         result = nil
         resultDecimal = nil
-        hasPreviousResult = false
     }
 
     // MARK: - Clipboard
@@ -408,7 +398,6 @@ final class CalculatorViewModel {
             expression = trimmed      // Показать выражение пользователю
             result = formatter.format(value)  // Показать результат
             resultDecimal = value
-            hasPreviousResult = true
             saveToHistory(expression: trimmed, result: value)
         } catch {
             if let calcError = error as? CalculatorError {
@@ -435,7 +424,6 @@ final class CalculatorViewModel {
     // MARK: - History
 
     func useHistoryEntry(_ entry: HistoryEntry) {
-        hasPreviousResult = false
         expression = entry.expression
         result = nil
         errorMessage = nil
@@ -455,13 +443,14 @@ final class CalculatorViewModel {
 
     private func tryAutoEvaluate() {
         let trimmed = expression.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty, !CalculatorEngine.isTrailingOperator(expression), !CalculatorEngine.hasUnclosedParentheses(trimmed) else { return }
+        guard !trimmed.isEmpty,
+              !CalculatorEngine.isTrailingOperator(expression),
+              !CalculatorEngine.hasUnclosedParentheses(trimmed) else { return }
 
         do {
             let value = try engine.evaluate(expression)
             result = formatter.format(value)
             resultDecimal = value
-            hasPreviousResult = true
         } catch {
             // ОСОЗНАННЫЙ ПРОПУСК ОШИБОК:
             // Автовычисление вызывается при вводе каждого оператора (метод appendCharacter)

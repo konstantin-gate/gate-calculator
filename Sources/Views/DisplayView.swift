@@ -94,7 +94,10 @@ struct DisplayView: View {
                         .onChange(of: errorMessage) { _, newError in
                             guard newError != nil else { return }
                             // Анимация shake при ошибке
-                            withAnimation(reduceMotion ? nil : .easeInOut(duration: Self.shakeDurationPerCycle).repeatCount(Self.shakeRepeatCount, autoreverses: true)) {
+                            let animation = reduceMotion ? nil : Animation.easeInOut(
+                                duration: Self.shakeDurationPerCycle
+                            ).repeatCount(Self.shakeRepeatCount, autoreverses: true)
+                            withAnimation(animation) {
                                 shakeOffset = Self.shakeAmplitude
                             }
                             Task {
@@ -138,11 +141,14 @@ struct DisplayView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel({
             if let error = errorMessage {
-                return "Ошибка: \(error)"
+                return localizedString("accessibility.error.prefix", comment: "") + ": " + error
             } else if let result = result {
-                return "Результат: \(result)"
+                return localizedString("accessibility.result.prefix", comment: "") + ": " + result
             } else {
-                return expression.isEmpty ? "Ноль" : "Выражение: \(expression)"
+                guard !expression.isEmpty else {
+                    return localizedString("accessibility.zero", comment: "")
+                }
+                return localizedString("accessibility.expression.prefix", comment: "") + ": " + expression
             }
         }())
     }

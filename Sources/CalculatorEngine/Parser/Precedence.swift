@@ -1,9 +1,22 @@
 import Foundation
 
-enum Precedence: Int, Sendable {
-    case addition = 1
-    case multiplication = 2
-    case unaryMinus = 3
+enum Precedence: Sendable {
+    /// Приоритет + и − (самый низкий)
+    case addition
+    /// Приоритет × и ÷
+    case multiplication
+    /// Приоритет % — на уровне × и ÷
+    case percent
+    /// Приоритет унарного минуса (выше × и ÷)
+    case unaryMinus
+
+    var value: Int {
+        switch self {
+        case .addition: return 1
+        case .multiplication, .percent: return 2
+        case .unaryMinus: return 3
+        }
+    }
 }
 
 extension BinaryOperator {
@@ -25,19 +38,13 @@ extension Token {
     var precedenceValue: Int {
         switch self {
         case .binaryOperator(let op):
-            return op.precedence.rawValue
+            return op.precedence.value
         case .percent:
-            return 2   // На уровне × и ÷
+            return Precedence.percent.value
         case .unaryMinus:
-            return 3   // Выше, чем × и ÷ — чтобы "5*-3" парсилось как "5*(-3)"
-        case .number:
-            return 1   // Не оператор, приоритет = 1 (на уровне + и −)
-        case .leftParenthesis:
-            return 1   // Скобка, приоритет = 1 (для сортировочной станции)
-        case .rightParenthesis:
-            return 1   // Закрывающая скобка, приоритет = 1 (для сортировочной станции)
-        case .percentRelative:
-            return 1   // Относительный процент — не-оператор, приоритет = 1 (как в default)
+            return Precedence.unaryMinus.value
+        case .number, .leftParenthesis, .rightParenthesis, .percentRelative:
+            return Precedence.addition.value
         }
     }
 
