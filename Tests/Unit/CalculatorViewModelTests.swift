@@ -10,8 +10,9 @@ final class CalculatorViewModelTests: XCTestCase {
     // MARK: - Вспомогательные методы
 
     private func createCleanViewModel() -> CalculatorViewModel {
-        HistoryService.shared.clear()
-        return CalculatorViewModel()
+        let vm = CalculatorViewModel()
+        vm.clearHistory()
+        return vm
     }
 
     // MARK: - Операции памяти (Memory)

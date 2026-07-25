@@ -3,6 +3,7 @@ import XCTest
 
 // MARK: - Тесты NumberFormatterService
 
+@MainActor
 final class NumberFormatterServiceTests: XCTestCase {
 
     // MARK: - Базовое форматирование целых чисел

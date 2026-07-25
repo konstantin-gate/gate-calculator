@@ -1,31 +1,27 @@
 import AppKit
-import Foundation
 
-/// Менеджер буфера обмена.
+/// Менеджер буфера обмена, изолированный на главном акторе.
 ///
 /// Предоставляет единый интерфейс для чтения и записи строк в системный
 /// буфер обмена через NSPasteboard.
-public final class ClipboardManager: @unchecked Sendable {
+///
+/// Потокобезопасность обеспечивается `@MainActor`: NSPasteboard — AppKit API,
+/// безопасный только на главном потоке. NSLock не требуется.
+@MainActor
+public final class ClipboardManager {
 
     /// Общий экземпляр менеджера.
     public static let shared = ClipboardManager()
 
     private init() {}
 
-    // ИСПРАВЛЕНИЕ C-14, M-06: добавлен NSLock для синхронизации доступа к NSPasteboard
-    private let lock = NSLock()
-
-    /// Получает строку из буфера обмена.
+    /// Получает строку из буфера обмена. Вызов изолирован главным актором.
     public func getString() -> String? {
-        lock.lock()
-        defer { lock.unlock() }
         return NSPasteboard.general.string(forType: .string)
     }
 
-    /// Помещает строку в буфер обмена.
+    /// Помещает строку в буфер обмена. Вызов изолирован главным актором.
     public func setString(_ string: String) {
-        lock.lock()
-        defer { lock.unlock() }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(string, forType: .string)
     }

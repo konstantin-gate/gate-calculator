@@ -48,18 +48,6 @@ struct KeyHandlerView: NSViewRepresentable {
     func makeNSView(context: Context) -> KeyHandlerNSView {
         let view = KeyHandlerNSView()
         view.viewModel = viewModel
-
-        // NSEventLocalMonitor перехватывает ⌘C на уровне run loop,
-        // независимо от first responder. Возвращает nil для ⌘C (перехват),
-        // все остальные события передаются дальше.
-        view.eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak view] event in
-            if event.modifierFlags.contains(.command), event.charactersIgnoringModifiers == "c" {
-                view?.viewModel?.copyResult()
-                return nil
-            }
-            return event
-        }
-
         return view
     }
 
@@ -68,17 +56,10 @@ struct KeyHandlerView: NSViewRepresentable {
     }
 }
 
-// ИСПРАВЛЕНИЕ M-07: добавлен @MainActor — KeyHandlerNSView вызывает viewModel методы на главном потоке
+// ИСПРАВЛЕНИЕ M-07, GC-08: KeyHandlerNSView изолирован главным актором. ⌘C обрабатывается в performKeyEquivalent.
 @MainActor
 class KeyHandlerNSView: NSView {
     weak var viewModel: CalculatorViewModel?
-    nonisolated(unsafe) internal var eventMonitor: Any?
-
-    nonisolated deinit {
-        if let monitor = eventMonitor {
-            NSEvent.removeMonitor(monitor)
-        }
-    }
 
     override func keyDown(with event: NSEvent) {
         guard let viewModel else {
@@ -124,6 +105,10 @@ class KeyHandlerNSView: NSView {
 
         if cmd, event.charactersIgnoringModifiers == "v" {
             viewModel?.handleClipboardAction()
+            return true
+        }
+        if cmd, event.charactersIgnoringModifiers == "c" {
+            viewModel?.copyResult()
             return true
         }
         // ИСПРАВЛЕНИЕ S-10: ⌘A и ⌘Z

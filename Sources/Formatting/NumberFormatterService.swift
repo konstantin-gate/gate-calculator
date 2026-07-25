@@ -1,12 +1,21 @@
 import Foundation
 
-public struct NumberFormatterService: Sendable {
+/// Сервис форматирования чисел, изолированный на главном акторе.
+///
+/// Хранит экземпляры `NumberFormatter` как stored properties.
+/// `NumberFormatter` — mutable reference type из Foundation (не thread-safe),
+/// поэтому сервис помечен `@MainActor`: все вызовы `format()` происходят
+/// на главном потоке.
+@MainActor
+public final class NumberFormatterService {
 
+    /// Общий экземпляр сервиса.
     public static let shared = NumberFormatterService()
 
     private let formatter: NumberFormatter
     private let exponentialFormatter: NumberFormatter
 
+    /// Инициализация форматтеров с локалью en_US (десятичный разделитель — запятая).
     public init() {
         let usLocale = Locale(identifier: "en_US")
 
@@ -27,6 +36,8 @@ public struct NumberFormatterService: Sendable {
         exponentialFormatter.exponentSymbol = "e"
     }
 
+    /// Форматирует `Decimal` в строку с группировкой разрядов.
+    /// Для значений >= 1e12 или < 0.000001 использует экспоненциальный формат.
     public func format(_ value: Decimal) -> String {
         let absValue = value < 0 ? -value : value
 
