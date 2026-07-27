@@ -181,7 +181,7 @@ struct CalculatorButton: View {
     private var accessibilityLabelText: String {
         // Динамическая метка для VoiceOver: при long-press на .clear — «Очистить всё»
         if case .clear = spec.label, isClearHolding {
-            return "Очистить всё"
+            return localizedString("accessibility.clearAll", comment: "")
         }
         return spec.accessibilityLabelOverride ?? spec.label.accessibilityDescription
     }
@@ -321,10 +321,10 @@ struct CalculatorButton: View {
             if isHovered, let tip = spec.memoryTooltip ?? spec.clipboardTooltip {
                 Text(tip)
                     .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(Color.black)
+                    .foregroundStyle(Color.primary)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 6))
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
                             .stroke(Color.gray.opacity(0.5), lineWidth: 1)

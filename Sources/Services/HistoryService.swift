@@ -25,13 +25,13 @@ public final class HistoryService: @unchecked Sendable {
     ///
     /// - Precondition: `maxEntries >= 0` (проверяется в init).
     /// - Thread-safe: блокировка через NSLock.
-    public func add(expression: String, result: Decimal) {
+    public func add(expression: String, result: Decimal, formattedResult: String) {
         lock.lock()
         defer { lock.unlock() }
 
         guard maxEntries > 0 else { return }
 
-        let entry = HistoryEntry(expression: expression, result: result)
+        let entry = HistoryEntry(expression: expression, result: result, formattedResult: formattedResult)
         entries.insert(entry, at: 0)
 
         if entries.count > maxEntries {

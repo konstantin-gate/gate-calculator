@@ -40,24 +40,47 @@ final class CalculatorViewModel {
 
     private var memoryValue: Decimal = 0
 
+    /// Кэш последнего вычисленного значения дисплея.
+    private var cachedDisplayValue: Decimal?
+    /// Выражение, соответствующее значению в `cachedDisplayValue`.
+    private var cachedExpression: String = ""
+
     /// Текущее значение на дисплее для операций памяти.
     /// Если есть resultDecimal — возвращает его.
-    /// Если есть выражение — пытается вычислить.
+    /// Если есть выражение — пытается вычислить, используя кэш.
     private var currentDisplayValue: Decimal? {
         if let result = resultDecimal {
             return result
         }
         let trimmed = expression.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return nil }
+        if trimmed == cachedExpression {
+            return cachedDisplayValue
+        }
         do {
-            return try engine.evaluate(trimmed)
+            let val = try engine.evaluate(trimmed)
+            cachedExpression = trimmed
+            cachedDisplayValue = val
+            return val
         } catch {
+            cachedExpression = trimmed
+            cachedDisplayValue = nil
             return nil
         }
     }
 
     /// Есть ли непустое значение в памяти (используется UI для визуальной индикации)
     var hasMemory: Bool { memoryValue != 0 }
+
+    // MARK: - Кэш значения дисплея
+
+    /// Сбрасывает кэш вычисленного значения дисплея.
+    /// Вызывается при любом изменении `expression`,
+    /// чтобы не возвращать устаревшее кэшированное значение.
+    private func invalidateDisplayCache() {
+        cachedExpression = ""
+        cachedDisplayValue = nil
+    }
 
     /// Отформатированное значение памяти для отображения в UI (tooltip, индикация)
     var memoryDisplayValue: String? {
@@ -92,13 +115,14 @@ final class CalculatorViewModel {
             resultDecimal = nil
         } else if hasResult && isOperator(char) {
             if let dec = savedResultDecimal {
-                expression = dec.description
+                expression = formatter.format(dec)
             }
             result = nil
             resultDecimal = nil
         }
 
         expression += char
+        invalidateDisplayCache()
         if !isDigitOrDecimal(char) && char != ")" {
             tryAutoEvaluate()
         }
@@ -119,6 +143,7 @@ final class CalculatorViewModel {
 
             result = formatted
             resultDecimal = value
+            invalidateDisplayCache()
             expression = ""
         } catch {
             if let calcError = error as? CalculatorError {
@@ -131,6 +156,7 @@ final class CalculatorViewModel {
 
     func clear() {
         expression = ""
+        invalidateDisplayCache()
         result = nil
         resultDecimal = nil
         errorMessage = nil
@@ -167,6 +193,7 @@ final class CalculatorViewModel {
 
         // Режим «Активный набор» — удаляем последний операнд или оператор
         removeLastOperandOrOperator()
+        invalidateDisplayCache()
 
         // Сбросить result/resultDecimal,
         // чтобы DisplayView показал урезанное expression
@@ -222,6 +249,7 @@ final class CalculatorViewModel {
             result = nil
             resultDecimal = nil
             expression.removeLast()
+            invalidateDisplayCache()
             // tryAutoEvaluate() НЕ вызывается — автовычисление при backspace не нужно
         } else if hasResult {
             clear()
@@ -232,10 +260,13 @@ final class CalculatorViewModel {
     func toggleSign() {
         if expression.isEmpty {
             toggleSignOfResult()
+            invalidateDisplayCache()
         } else if let isSimple = try? engine.isSimpleTerm(expression), isSimple {
             expression = toggleSimpleTermSign(expression)
+            invalidateDisplayCache()
         } else {
             expression = toggleComplexExpressionSign(expression)
+            invalidateDisplayCache()
         }
         errorMessage = nil
     }
@@ -379,6 +410,7 @@ final class CalculatorViewModel {
         } else {
             expression = memStr
         }
+        invalidateDisplayCache()
 
         result = nil
         resultDecimal = nil
@@ -396,6 +428,7 @@ final class CalculatorViewModel {
         do {
             let value = try engine.evaluate(trimmed)
             expression = trimmed      // Показать выражение пользователю
+            invalidateDisplayCache()
             result = formatter.format(value)  // Показать результат
             resultDecimal = value
             saveToHistory(expression: trimmed, result: value)
@@ -425,13 +458,15 @@ final class CalculatorViewModel {
 
     func useHistoryEntry(_ entry: HistoryEntry) {
         expression = entry.expression
+        invalidateDisplayCache()
         result = nil
         errorMessage = nil
         tryAutoEvaluate()
     }
 
     private func saveToHistory(expression: String, result: Decimal) {
-        historyService.add(expression: expression, result: result)
+        let formatted = formatter.format(result)
+        historyService.add(expression: expression, result: result, formattedResult: formatted)
         historyEntries = historyService.getEntries()
     }
 

@@ -27,7 +27,7 @@ struct HistoryPanelView: View {
                                 .font(.system(size: 12))
                                 .foregroundStyle(CalculatorColors.displayTextSecondary)
 
-                            Text("= \(NumberFormatterService.shared.format(entry.result))")
+                            Text("= \(entry.formattedResult)")
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundStyle(Color.primary)
                         }

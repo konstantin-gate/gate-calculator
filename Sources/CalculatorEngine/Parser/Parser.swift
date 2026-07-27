@@ -73,10 +73,8 @@ public struct Parser: Sendable {
                 // Относительный %: если на стеке операторов + или -, создаём .percentRelative
                 if let top = operatorStack.last, case .binaryOperator(let op) = top {
                     if op == .add || op == .subtract {
-                        // Выталкиваем оператор в output: [leftNumber, rightNumber, operator]
-                        output.append(operatorStack.removeLast())
-                        // Удаляем оператор (последний элемент)
-                        output.removeLast()
+                        // Извлекаем оператор из стека без добавления в output
+                        _ = operatorStack.removeLast()
                         // Извлекаем percentValue (правый операнд, теперь последний)
                         guard output.count >= 2 else {
                             throw CalculatorError.invalidExpression("Invalid expression")

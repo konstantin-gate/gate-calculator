@@ -9,7 +9,7 @@ final class HistoryServiceTests: XCTestCase {
 
     func testAdd_SingleEntry() {
         let service = HistoryService(maxEntries: 3)
-        service.add(expression: "2+2", result: 4)
+        service.add(expression: "2+2", result: 4, formattedResult: "4")
         XCTAssertEqual(service.getEntries().count, 1)
         let entry = service.getEntries()[0]
         XCTAssertEqual(entry.expression, "2+2")
@@ -21,9 +21,9 @@ final class HistoryServiceTests: XCTestCase {
 
     func testAdd_MultipleEntries_ReversedOrder() {
         let service = HistoryService(maxEntries: 3)
-        service.add(expression: "1", result: 1)
-        service.add(expression: "2", result: 2)
-        service.add(expression: "3", result: 3)
+        service.add(expression: "1", result: 1, formattedResult: "1")
+        service.add(expression: "2", result: 2, formattedResult: "2")
+        service.add(expression: "3", result: 3, formattedResult: "3")
         XCTAssertEqual(service.getEntries()[0].expression, "3")
         XCTAssertEqual(service.getEntries()[1].expression, "2")
         XCTAssertEqual(service.getEntries()[2].expression, "1")
@@ -34,7 +34,7 @@ final class HistoryServiceTests: XCTestCase {
     func testAdd_MaxEntriesLimit_CapsAtThree() {
         let service = HistoryService(maxEntries: 3)
         for i in 1...5 {
-            service.add(expression: "\(i)", result: Decimal(i))
+            service.add(expression: "\(i)", result: Decimal(i), formattedResult: NumberFormatterService.shared.format(Decimal(i)))
         }
         XCTAssertEqual(service.getEntries().count, 3)
         XCTAssertEqual(service.getEntries()[0].expression, "5")
@@ -45,7 +45,7 @@ final class HistoryServiceTests: XCTestCase {
     func testAdd_MaxEntriesBoundary_ExactCount() {
         let service = HistoryService(maxEntries: 3)
         for i in 1...3 {
-            service.add(expression: "\(i)", result: Decimal(i))
+            service.add(expression: "\(i)", result: Decimal(i), formattedResult: NumberFormatterService.shared.format(Decimal(i)))
         }
         XCTAssertEqual(service.getEntries().count, 3)
         XCTAssertEqual(service.getEntries()[0].expression, "3")
@@ -55,14 +55,14 @@ final class HistoryServiceTests: XCTestCase {
 
     func testAdd_MaxEntriesZero_NeverStoresEntries() {
         let service = HistoryService(maxEntries: 0)
-        service.add(expression: "1+1", result: Decimal(2))
+        service.add(expression: "1+1", result: Decimal(2), formattedResult: "2")
         XCTAssertEqual(service.count(), 0)
         XCTAssertTrue(service.getEntries().isEmpty)
     }
 
     func testAdd_MaxEntriesNegative_NeverStoresEntries() {
         let service = HistoryService(maxEntries: -1)
-        service.add(expression: "2+2", result: Decimal(4))
+        service.add(expression: "2+2", result: Decimal(4), formattedResult: "4")
         XCTAssertEqual(service.count(), 0)
         XCTAssertTrue(service.getEntries().isEmpty)
     }
@@ -77,9 +77,9 @@ final class HistoryServiceTests: XCTestCase {
 
     func testClear_RemovesAllEntries() {
         let service = HistoryService(maxEntries: 3)
-        service.add(expression: "1", result: 1)
-        service.add(expression: "2", result: 2)
-        service.add(expression: "3", result: 3)
+        service.add(expression: "1", result: 1, formattedResult: "1")
+        service.add(expression: "2", result: 2, formattedResult: "2")
+        service.add(expression: "3", result: 3, formattedResult: "3")
         service.clear()
         XCTAssertEqual(service.getEntries().count, 0)
         XCTAssertTrue(service.getEntries().isEmpty)
@@ -89,15 +89,15 @@ final class HistoryServiceTests: XCTestCase {
 
     func testCount_AfterAdd() {
         let service = HistoryService(maxEntries: 3)
-        service.add(expression: "1", result: 1)
-        service.add(expression: "2", result: 2)
+        service.add(expression: "1", result: 1, formattedResult: "1")
+        service.add(expression: "2", result: 2, formattedResult: "2")
         XCTAssertEqual(service.count(), 2)
     }
 
     func testCount_AfterClear() {
         let service = HistoryService(maxEntries: 3)
-        service.add(expression: "1", result: 1)
-        service.add(expression: "2", result: 2)
+        service.add(expression: "1", result: 1, formattedResult: "1")
+        service.add(expression: "2", result: 2, formattedResult: "2")
         service.clear()
         XCTAssertEqual(service.count(), 0)
     }
@@ -111,7 +111,7 @@ final class HistoryServiceTests: XCTestCase {
 
     func testGetEntries_ReturnsCopy() {
         let service = HistoryService(maxEntries: 3)
-        service.add(expression: "1+1", result: 2)
+        service.add(expression: "1+1", result: 2, formattedResult: "2")
         var entries = service.getEntries()
         entries.removeAll()
         XCTAssertEqual(service.count(), 1, "Копия не влияет на сервис")
@@ -127,7 +127,7 @@ final class HistoryServiceTests: XCTestCase {
         for i in 0..<iterations {
             group.enter()
             DispatchQueue.global(qos: .userInitiated).async {
-                concurrentService.add(expression: "\(i)", result: Decimal(i))
+                concurrentService.add(expression: "\(i)", result: Decimal(i), formattedResult: NumberFormatterService.shared.format(Decimal(i)))
                 group.leave()
             }
         }

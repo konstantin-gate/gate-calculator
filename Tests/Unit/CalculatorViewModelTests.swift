@@ -415,6 +415,23 @@ final class CalculatorViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.expression.last, "*")
     }
 
+    func testAppendCharacter_OperatorAfterLargeNumberResult_PreservesFormatting() {
+        let viewModel = createCleanViewModel()
+        viewModel.appendCharacter("1")
+        viewModel.appendCharacter("0")
+        viewModel.appendCharacter("0")
+        viewModel.appendCharacter("0")
+        viewModel.appendCharacter("*")
+        viewModel.appendCharacter("1")
+        viewModel.appendCharacter("0")
+        viewModel.appendCharacter("0")
+        viewModel.appendCharacter("0")
+        viewModel.evaluate()
+        XCTAssertEqual(viewModel.result, "1 000 000")
+        viewModel.appendCharacter("+")
+        XCTAssertEqual(viewModel.expression, "1 000 000+")
+    }
+
     // MARK: - История (History)
 
     func testClearHistory_ClearsAllEntries() {
