@@ -37,7 +37,6 @@ public struct Parser: Sendable {
                 while let top = operatorStack.last, !top.isLeftParen {
                     output.append(operatorStack.removeLast())
                 }
-                // ИСПРАВЛЕНИЕ C-05a: правая скобка без левой → extraClosingParenthesis
                 guard operatorStack.last?.isLeftParen == true else {
                     throw CalculatorError.extraClosingParenthesis
                 }
@@ -100,7 +99,6 @@ public struct Parser: Sendable {
             }
         }
 
-        // ИСПРАВЛЕНИЕ C-05b: различаем left и right paren в остатке стека
         while let top = operatorStack.popLast() {
             if top.isLeftParen {
                 throw CalculatorError.missingClosingParenthesis

@@ -103,7 +103,6 @@ struct DisplayView: View {
                             Task {
                                 do {
                                     try await Task.sleep(nanoseconds: Self.shakeResetDelayNanos)
-                                    // ИСПРАВЛЕНИЕ N-05: проверка cancellation
                                     if !Task.isCancelled {
                                         shakeOffset = 0
                                     }
@@ -155,7 +154,6 @@ struct DisplayView: View {
 
     // MARK: - Адаптивный шрифт
 
-    // ИСПРАВЛЕНИЕ S-02: размеры 42/36/30/24 вместо 70/56/44/32, удалён .design(.rounded)
     private func adaptiveFont(for text: String) -> Font {
         let count = text.count
         switch count {
@@ -174,8 +172,6 @@ struct DisplayView: View {
             .replacingOccurrences(of: "*", with: " × ")
             .replacingOccurrences(of: ".", with: ",")
 
-        // ИСПРАВЛЕНИЕ S-14: возвращена замена "." на "," — formatter теперь использует запятую
-        // ИСПРАВЛЕНИЕ S-15: различаем унарный и бинарный минус
         var formatted = ""
         var prevChar: Character? = nil
         for char in result {

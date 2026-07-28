@@ -20,7 +20,6 @@ struct CalculatorApp: App {
         }
         .windowStyle(.titleBar)
         .windowResizability(.contentSize)
-        // ИСПРАВЛЕНИЕ S-07 и перестановка кнопок 6x5: размеры 380×520
         .defaultSize(width: 380, height: 520)
         .commands {
             CommandGroup(replacing: .newItem) {}
@@ -56,7 +55,6 @@ struct KeyHandlerView: NSViewRepresentable {
     }
 }
 
-// ИСПРАВЛЕНИЕ M-07, GC-08: KeyHandlerNSView изолирован главным актором. ⌘C обрабатывается в performKeyEquivalent.
 @MainActor
 class KeyHandlerNSView: NSView {
     weak var viewModel: CalculatorViewModel?
@@ -111,7 +109,6 @@ class KeyHandlerNSView: NSView {
             viewModel?.copyResult()
             return true
         }
-        // ИСПРАВЛЕНИЕ S-10: ⌘A и ⌘Z
         if cmd, event.charactersIgnoringModifiers == "a" {
             // Select All — в контексте калькулятора заглушка
             return true

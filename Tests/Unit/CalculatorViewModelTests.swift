@@ -202,7 +202,7 @@ final class CalculatorViewModelTests: XCTestCase {
         XCTAssertNotNil(viewModel.errorMessage)
     }
 
-    // MARK: - Tests: handleClipboardAction (GC-01)
+    // MARK: - Tests: handleClipboardAction
 
     func testClipboardAction_EmptyState_PastesFromClipboard() {
         let vm = createCleanViewModel()

@@ -111,7 +111,6 @@ final class TokenizerTests: XCTestCase {
         }
     }
 
-    // ИСПРАВЛЕНИЕ C-12: "e3" бросает ошибку invalidCharacter('e')
     func testTokenize_EulerNumberFollowedByDigit() {
         let tokenizer = Tokenizer()
         XCTAssertThrowsError(try tokenizer.tokenize("e3"))
@@ -120,7 +119,6 @@ final class TokenizerTests: XCTestCase {
     func testTokenize_UnaryMinus() throws {
         let tokenizer = Tokenizer()
         let tokens = try tokenizer.tokenize("-5+12")
-        // ИСПРАВЛЕНИЕ C-15: "-5+12" → 4 токена (unaryMinus, number(5), add, number(12))
         XCTAssertEqual(tokens.count, 4)
     }
 
@@ -182,8 +180,6 @@ final class TokenizerTests: XCTestCase {
     func testTokenize_ComplexExpression() throws {
         let tokenizer = Tokenizer()
         let tokens = try tokenizer.tokenize("((15+16)*5)/3")
-        // ИСПРАВЛЕНИЕ C-16: "((15+16)*5)/3" → 10 токенов
-        // leftParen, leftParen, number(15), add, number(16), rightParen, multiply, number(5), divide, number(3)
         XCTAssertEqual(tokens.count, 10)
     }
 

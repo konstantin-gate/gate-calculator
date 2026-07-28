@@ -202,7 +202,6 @@ public struct Tokenizer: Sendable {
         let newIndex: String.Index
     }
 
-    // ИСПРАВЛЕНИЕ C-07: добавлена проверка продвижения индекса, throws вместо возврата (0, start)
     private func readNumber(_ str: String, from start: String.Index) throws -> ReadNumberResult {
         var i = start
 
@@ -254,7 +253,6 @@ public struct Tokenizer: Sendable {
             }
         }
 
-        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ C-07: если индекс не продвинулся — бесконечный цикл
         if i == start {
             throw CalculatorError.invalidCharacter(str[start] == "." ? "." : String(str[start]))
         }
@@ -270,7 +268,6 @@ public struct Tokenizer: Sendable {
         throw CalculatorError.invalidCharacter(String(str[start]))
     }
 
-    // ИСПРАВЛЕНИЕ C-07: добавлена проверка пустого hexStr, бросается ошибка
     private func readHex(_ str: String, from start: String.Index) throws -> ReadNumberResult {
         var i = start
         var hexStr = ""
@@ -296,7 +293,6 @@ public struct Tokenizer: Sendable {
         throw CalculatorError.invalidNumber(hexStr)
     }
 
-    // ИСПРАВЛЕНИЕ C-07: добавлена проверка пустого binStr, бросается ошибка
     private func readBinary(_ str: String, from start: String.Index) throws -> ReadNumberResult {
         var i = start
         var binStr = ""
@@ -322,7 +318,6 @@ public struct Tokenizer: Sendable {
         throw CalculatorError.invalidNumber(binStr)
     }
 
-    // ИСПРАВЛЕНИЕ C-07: добавлена проверка пустого octStr, бросается ошибка
     private func readOctal(_ str: String, from start: String.Index) throws -> ReadNumberResult {
         var i = start
         var octStr = ""

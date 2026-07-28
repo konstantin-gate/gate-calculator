@@ -419,7 +419,6 @@ final class CalculatorViewModel {
     // MARK: - Clipboard
 
     func insertFromClipboard(_ text: String) {
-        // ИСПРАВЛЕНИЕ C-06: показать выражение пользователю вместо expression = ""
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
@@ -445,7 +444,6 @@ final class CalculatorViewModel {
         clipboardManager.setString(displayValue)
     }
 
-    // GC-01: единая точка обработки действий кнопки буфера обмена
     func handleClipboardAction() {
         if isClipboardPasteMode, let text = clipboardManager.getString() {
             insertFromClipboard(text)
