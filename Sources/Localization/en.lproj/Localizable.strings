@@ -29,16 +29,10 @@
 "errors.negativeSquareRoot" = "Square root of negative number";
 
 /* Clipboard */
-"clipboard.cannotEvaluate" = "Cannot evaluate";
-
-/* Clipboard */
 "clipboard.copy" = "Copy result";
 "clipboard.paste" = "Paste from clipboard";
 "clipboard.copy.tooltip" = "Copy";
 "clipboard.paste.tooltip" = "Paste";
-
-/* Memory */
-"memory.tooltip" = "Memory: ";
 
 /* Accessibility buttons */
 "accessibility.divide" = "Divide";

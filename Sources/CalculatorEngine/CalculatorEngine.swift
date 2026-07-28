@@ -80,7 +80,7 @@ public struct CalculatorEngine: Sendable {
     /// - Parameter expression: Строка с математическим выражением.
     /// - Returns: `true` если выражение является простым термином.
     /// - Throws: `CalculatorError` если токенизация не удалась.
-    public func isSimpleTerm(_ expression: String) throws -> Bool {
+    public static func isSimpleTerm(_ expression: String) throws -> Bool {
         let tokenizer = Tokenizer()
         let tokens = try tokenizer.tokenize(expression)
 

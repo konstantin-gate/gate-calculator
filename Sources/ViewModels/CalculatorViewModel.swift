@@ -261,7 +261,7 @@ final class CalculatorViewModel {
         if expression.isEmpty {
             toggleSignOfResult()
             invalidateDisplayCache()
-        } else if let isSimple = try? engine.isSimpleTerm(expression), isSimple {
+        } else if let isSimple = try? CalculatorEngine.isSimpleTerm(expression), isSimple {
             expression = toggleSimpleTermSign(expression)
             invalidateDisplayCache()
         } else {

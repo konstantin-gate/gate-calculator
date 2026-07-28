@@ -17,6 +17,4 @@ public enum BinaryOperator: String, Sendable {
     case subtract = "-"
     case multiply = "*"
     case divide = "/"
-
-    var symbol: String { rawValue }
 }

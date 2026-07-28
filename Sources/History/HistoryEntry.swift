@@ -5,7 +5,7 @@ import Foundation
 /// Содержит исходное выражение, результат вычисления и метку времени.
 public struct HistoryEntry: Identifiable, Sendable {
     /// Уникальный идентификатор записи.
-    public var id = UUID()
+    public let id = UUID()
 
     /// Исходное математическое выражение.
     public let expression: String

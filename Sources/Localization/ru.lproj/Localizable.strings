@@ -29,16 +29,10 @@
 "errors.negativeSquareRoot" = "Корень из отрицательного числа";
 
 /* Clipboard */
-"clipboard.cannotEvaluate" = "Невозможно вычислить";
-
-/* Clipboard */
 "clipboard.copy" = "Копировать результат";
 "clipboard.paste" = "Вставить из буфера";
 "clipboard.copy.tooltip" = "Копировать";
 "clipboard.paste.tooltip" = "Вставить";
-
-/* Memory */
-"memory.tooltip" = "Память: ";
 
 /* Accessibility кнопок */
 "accessibility.divide" = "Разделить";
