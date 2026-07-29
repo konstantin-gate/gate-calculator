@@ -121,4 +121,20 @@ final class NumberFormatterServiceTests: XCTestCase {
         XCTAssertFalse(result.contains("E"))
         XCTAssertFalse(result.contains("e-"))
     }
+
+    // MARK: - Граничные значения Decimal
+
+    /// Проверяет форматирование максимально возможного числа Decimal (экспоненциальный формат).
+    func testFormat_MaxDecimal() {
+        let maxDecimal = Decimal(sign: .plus, exponent: 127, significand: 1)
+        let result = NumberFormatterService.shared.format(maxDecimal)
+        XCTAssertTrue(result.contains("e"), "Экспоненциальный формат для большого числа")
+    }
+
+    /// Проверяет форматирование отрицательного нуля (должен возвращать "0" без знака минус).
+    func testFormat_NegativeZero() {
+        let negativeZero = -Decimal(0)
+        let result = NumberFormatterService.shared.format(negativeZero)
+        XCTAssertEqual(result, "0")
+    }
 }

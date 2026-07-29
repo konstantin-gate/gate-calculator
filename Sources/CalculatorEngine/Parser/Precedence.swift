@@ -3,17 +3,15 @@ import Foundation
 enum Precedence: Sendable {
     /// Приоритет + и − (самый низкий)
     case addition
-    /// Приоритет × и ÷
+    /// Приоритет ×, ÷ и % (средний)
     case multiplication
-    /// Приоритет % — на уровне × и ÷
-    case percent
     /// Приоритет унарного минуса (выше × и ÷)
     case unaryMinus
 
     var value: Int {
         switch self {
         case .addition: return 1
-        case .multiplication, .percent: return 2
+        case .multiplication: return 2
         case .unaryMinus: return 3
         }
     }
@@ -40,7 +38,7 @@ extension Token {
         case .binaryOperator(let op):
             return op.precedence.value
         case .percent:
-            return Precedence.percent.value
+            return Precedence.multiplication.value
         case .unaryMinus:
             return Precedence.unaryMinus.value
         case .number, .leftParenthesis, .rightParenthesis, .percentRelative:

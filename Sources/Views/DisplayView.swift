@@ -67,67 +67,13 @@ struct DisplayView: View {
 
     var body: some View {
         VStack(alignment: .trailing, spacing: Self.vstackSpacing) {
-
-            // --- Строка выражения (показывается только при активном вводе) ---
-            if !expression.isEmpty && result == nil && errorMessage == nil {
-                Text(formattedExpression)
-                    .font(.system(size: Self.fontSizeExpression, weight: .regular))
-                    .foregroundStyle(CalculatorColors.displayTextSecondary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.trailing)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-
+            expressionRow
             Spacer(minLength: Self.spacerMinLength)
-
-            // --- Главное число / результат / ошибка ---
             Group {
-                if let error = errorMessage {
-                    Text(error)
-                        .font(.system(size: Self.fontSizeError, weight: .regular))
-                        .foregroundStyle(CalculatorColors.errorText)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.trailing)
-                        .minimumScaleFactor(Self.errorMinimumScaleFactor)
-                        .offset(x: shakeOffset)
-                        .onChange(of: errorMessage) { _, newError in
-                            guard newError != nil else { return }
-                            // Анимация shake при ошибке
-                            let animation = reduceMotion ? nil : Animation.easeInOut(
-                                duration: Self.shakeDurationPerCycle
-                            ).repeatCount(Self.shakeRepeatCount, autoreverses: true)
-                            withAnimation(animation) {
-                                shakeOffset = Self.shakeAmplitude
-                            }
-                            Task {
-                                do {
-                                    try await Task.sleep(nanoseconds: Self.shakeResetDelayNanos)
-                                    if !Task.isCancelled {
-                                        shakeOffset = 0
-                                    }
-                                } catch {
-                                    // cancelled — ignore
-                                }
-                            }
-                        }
+                if errorMessage != nil {
+                    errorContent
                 } else {
-                    let mainText = result ?? (expression.isEmpty ? "0" : expression)
-                    Text(mainText)
-                        .font(adaptiveFont(for: mainText))
-                        .foregroundStyle(CalculatorColors.displayTextPrimary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(Self.mainMinimumScaleFactor)
-                        .truncationMode(.middle)
-                        .opacity(resultOpacity)
-                        .onChange(of: result) { _, newResult in
-                            guard newResult != nil else { return }
-                            // Анимация flash при результате: плавное изменение opacity 1.0 -> 0.6 -> 1.0
-                            resultOpacity = Self.flashOpacityIntermediate
-                            withAnimation(reduceMotion ? nil : .easeInOut(duration: Self.flashDuration)) {
-                                resultOpacity = 1.0
-                            }
-                        }
+                    mainValueContent
                 }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
@@ -136,20 +82,93 @@ struct DisplayView: View {
         .padding(.horizontal, Self.paddingHorizontal)
         .padding(.top, Self.paddingTop)
         .padding(.bottom, Self.paddingBottom)
-        // Accessibility для всего дисплея
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel({
-            if let error = errorMessage {
-                return localizedString("accessibility.error.prefix", comment: "") + ": " + error
-            } else if let result = result {
-                return localizedString("accessibility.result.prefix", comment: "") + ": " + result
-            } else {
-                guard !expression.isEmpty else {
-                    return localizedString("accessibility.zero", comment: "")
+        .accessibilityLabel(accessibilityDescription)
+    }
+
+    // MARK: - Строка выражения (показывается при активном вводе)
+
+    @ViewBuilder
+    private var expressionRow: some View {
+        if !expression.isEmpty && result == nil && errorMessage == nil {
+            Text(formattedExpression)
+                .font(.system(size: Self.fontSizeExpression, weight: .regular))
+                .foregroundStyle(CalculatorColors.displayTextSecondary)
+                .lineLimit(2)
+                .multilineTextAlignment(.trailing)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+        }
+    }
+
+    // MARK: - Блок ошибки с shake-анимацией
+
+    @ViewBuilder
+    private var errorContent: some View {
+        if let error = errorMessage {
+            Text(error)
+                .font(.system(size: Self.fontSizeError, weight: .regular))
+                .foregroundStyle(CalculatorColors.errorText)
+                .lineLimit(2)
+                .multilineTextAlignment(.trailing)
+                .minimumScaleFactor(Self.errorMinimumScaleFactor)
+                .offset(x: shakeOffset)
+                .onChange(of: errorMessage) { _, newError in
+                    guard newError != nil else { return }
+                    let animation = reduceMotion ? nil : Animation.easeInOut(
+                        duration: Self.shakeDurationPerCycle
+                    ).repeatCount(Self.shakeRepeatCount, autoreverses: true)
+                    withAnimation(animation) {
+                        shakeOffset = Self.shakeAmplitude
+                    }
+                    Task {
+                        do {
+                            try await Task.sleep(nanoseconds: Self.shakeResetDelayNanos)
+                            if !Task.isCancelled {
+                                shakeOffset = 0
+                            }
+                        } catch {
+                            // cancelled — ignore
+                        }
+                    }
                 }
-                return localizedString("accessibility.expression.prefix", comment: "") + ": " + expression
+        }
+    }
+
+    // MARK: - Основной контент с flash-анимацией
+
+    @ViewBuilder
+    private var mainValueContent: some View {
+        let mainText = result ?? (expression.isEmpty ? "0" : expression)
+        Text(mainText)
+            .font(adaptiveFont(for: mainText))
+            .foregroundStyle(CalculatorColors.displayTextPrimary)
+            .lineLimit(1)
+            .minimumScaleFactor(Self.mainMinimumScaleFactor)
+            .truncationMode(.middle)
+            .opacity(resultOpacity)
+            .onChange(of: result) { _, newResult in
+                guard newResult != nil else { return }
+                resultOpacity = Self.flashOpacityIntermediate
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: Self.flashDuration)) {
+                    resultOpacity = 1.0
+                }
             }
-        }())
+    }
+
+    // MARK: - Accessibility описание дисплея
+
+    private var accessibilityDescription: String {
+        if let error = errorMessage {
+            return localizedString("accessibility.error.prefix", comment: "") + ": " + error
+        } else if let result = result {
+            return localizedString("accessibility.result.prefix", comment: "") + ": " + result
+        } else {
+            guard !expression.isEmpty else {
+                return localizedString("accessibility.zero", comment: "")
+            }
+            return localizedString("accessibility.expression.prefix", comment: "") + ": " + expression
+        }
     }
 
     // MARK: - Адаптивный шрифт

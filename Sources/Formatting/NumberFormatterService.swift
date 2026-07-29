@@ -15,7 +15,11 @@ public final class NumberFormatterService {
     private let formatter: NumberFormatter
     private let exponentialFormatter: NumberFormatter
 
-    /// Инициализация форматтеров с локалью en_US (десятичный разделитель — запятая).
+    /// Инициализация форматтеров с локалью en_US.
+    ///
+    /// ОСОЗНАННОЕ РЕШЕНИЕ: Локаль захардкожена как "en_US" для единообразного отображения чисел
+    /// независимо от системных настроек пользователя (десятичный разделитель — запятая ",",
+    /// разделитель разрядов — пробел " "). Соответствует design-спецификации и поведению macOS Calculator.
     public init() {
         let usLocale = Locale(identifier: "en_US")
 

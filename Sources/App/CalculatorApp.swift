@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 @main
 struct CalculatorApp: App {
@@ -47,6 +48,9 @@ struct KeyHandlerView: NSViewRepresentable {
     func makeNSView(context: Context) -> KeyHandlerNSView {
         let view = KeyHandlerNSView()
         view.viewModel = viewModel
+        DispatchQueue.main.async {
+            view.window?.makeFirstResponder(view)
+        }
         return view
     }
 

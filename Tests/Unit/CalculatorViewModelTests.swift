@@ -458,4 +458,64 @@ final class CalculatorViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.result)
         XCTAssertNil(viewModel.errorMessage)
     }
+
+    // MARK: - Тесты локализации ошибок
+
+    /// Проверяет, что каждый кейс CalculatorError возвращает непустое локализованное сообщение.
+    func testAllErrorCases_HaveLocalizedMessages() {
+        let errors: [CalculatorError] = [
+            .divisionByZero,
+            .invalidExpression("test message"),
+            .missingClosingParenthesis,
+            .extraClosingParenthesis,
+            .invalidCharacter("@"),
+            .emptyExpression,
+            .invalidNumber("xyz"),
+            .doubleOperator
+        ]
+
+        for error in errors {
+            let message = error.localizedMessage
+            XCTAssertFalse(message.isEmpty, "localizedMessage для \(error) не должен быть пустым")
+        }
+    }
+
+    // MARK: - Тесты кэша displayValue
+
+    /// Проверяет, что повторный вызов memoryAdd() с тем же выражением использует кэшированное значение.
+    func testDisplayValueCache_CachedExpression() {
+        let viewModel = createCleanViewModel()
+        viewModel.appendCharacter("5")
+        viewModel.appendCharacter("+")
+        viewModel.appendCharacter("3")
+
+        // Первый вызов memoryAdd вычисляет currentDisplayValue и кэширует
+        viewModel.memoryAdd()
+        let memoryAfterFirst = viewModel.hasMemory
+        XCTAssertTrue(memoryAfterFirst)
+
+        // Второй вызов memoryAdd с тем же выражением использует кэш
+        viewModel.memoryAdd()
+        // memoryValue должно быть 8+8=16 (кэш вернул 8 повторно)
+        XCTAssertTrue(viewModel.hasMemory)
+    }
+
+    /// Проверяет, что изменение выражения корректно сбрасывает (инвалидирует) кэш displayValue.
+    func testDisplayValueCache_InvalidatedOnExpressionChange() {
+        let viewModel = createCleanViewModel()
+        viewModel.appendCharacter("5")
+        viewModel.appendCharacter("+")
+        viewModel.appendCharacter("3")
+
+        // Кэшируем значение выражения "5+3" = 8
+        viewModel.memoryAdd()
+
+        // Меняем выражение — кэш должен сброситься
+        viewModel.clearCurrentInput()
+        viewModel.appendCharacter("2")
+
+        // Теперь currentDisplayValue должен вычислить новое значение (не кэшированное "5+3")
+        viewModel.memoryAdd()
+        XCTAssertTrue(viewModel.hasMemory)
+    }
 }

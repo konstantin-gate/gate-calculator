@@ -261,6 +261,8 @@ final class CalculatorViewModel {
         if expression.isEmpty {
             toggleSignOfResult()
             invalidateDisplayCache()
+        // ОСОЗНАННЫЙ ПРОПУСК ОШИБКИ: isSimpleTerm выбрасывает CalculatorError при невалидном выражении.
+        // В таком случае термин точно не простой, и ветка else корректно обрабатывает его через toggleComplexExpressionSign.
         } else if let isSimple = try? CalculatorEngine.isSimpleTerm(expression), isSimple {
             expression = toggleSimpleTermSign(expression)
             invalidateDisplayCache()

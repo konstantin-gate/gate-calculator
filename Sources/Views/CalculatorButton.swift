@@ -115,6 +115,34 @@ enum ButtonLabel {
         default:           return nil
         }
     }
+
+    /// Суффикс для accessibility identifier кнопки.
+    /// Используется для формирования уникального и безопасного идентификатора вида "calc_btn_[suffix]".
+    var accessibilityIdentifierSuffix: String {
+        switch self {
+        case .digit(let s):           return s
+        case .decimalSeparator:       return "comma"
+        case .clear:                  return "C"
+        case .backspace:              return "backspace"
+        case .plusMinus:              return "plus_minus"
+        case .percent:                return "percent"
+        case .divide:                 return "div"
+        case .multiply:               return "mul"
+        case .subtract:               return "sub"
+        case .add:                    return "add"
+        case .equals:                 return "eq"
+        case .openParen:              return "lparen"
+        case .closeParen:             return "rparen"
+        case .mc:                     return "MC"
+        case .mPlus:                  return "M_plus"
+        case .mMinus:                 return "M_minus"
+        case .mR:                     return "MR"
+        case .clearAll:               return "AC"
+        case .sqrt:                   return "sqrt"
+        case .square:                 return "sq"
+        case .clipboard:              return "clipboard"
+        }
+    }
 }
 
 // MARK: - Спецификация кнопки
@@ -209,43 +237,31 @@ struct CalculatorButton: View {
         return Color.secondary
     }
 
-    // MARK: Body
+    // MARK: - Вынесенные компоненты body
 
-    var body: some View {
-        // Широкая кнопка "0": диаметр × 2 + spacing
-        let targetWidth: CGFloat = spec.isWide ? diameter * 2 + spacing : diameter
+    /// Содержимое кнопки: иконка (SF Symbol) или текстовая метка
+    @ViewBuilder
+    private var buttonContent: some View {
+        if let icon = spec.iconOverride ?? spec.label.iconSystemName {
+            Image(systemName: icon)
+                .font(.system(size: fontSize, weight: .regular))
+                .minimumScaleFactor(0.55)
+                .lineLimit(1)
+                .foregroundStyle(foregroundColor)
+        } else {
+            Text(displayText)
+                .font(.system(size: fontSize, weight: .regular))
+                .minimumScaleFactor(0.55)
+                .lineLimit(1)
+                .foregroundStyle(foregroundColor)
+        }
+    }
 
-        Group {
-            if let icon = spec.iconOverride ?? spec.label.iconSystemName {
-                Image(systemName: icon)
-                    .font(.system(size: fontSize, weight: .regular))
-                    .minimumScaleFactor(0.55)
-                    .lineLimit(1)
-                    .foregroundStyle(foregroundColor)
-            } else {
-                Text(displayText)
-                    .font(.system(size: fontSize, weight: .regular))
-                    .minimumScaleFactor(0.55)
-                    .lineLimit(1)
-                    .foregroundStyle(foregroundColor)
-            }
-        }
-        .frame(width: targetWidth, height: diameter)
-        .background(
-            isPressed
-                ? CalculatorColors.pressedColor(for: backgroundColor)
-                : backgroundColor
-        )
-        .clipShape(
-            AnyShape(RoundedRectangle(cornerRadius: buttonCornerRadius))
-        )
-        .overlay {
-            if hasBorder && !spec.isWide {
-                RoundedRectangle(cornerRadius: buttonCornerRadius)
-                    .stroke(borderColor, lineWidth: 1.0)
-            }
-        }
-        .overlay(alignment: .bottomTrailing) {
+    /// Индикаторы памяти (зелёный кружок) и буфера обмена (цветной кружок)
+    /// Оба positioned в bottomTrailing corner, clipboard со смещением (-2, -2)
+    @ViewBuilder
+    private var indicatorsOverlay: some View {
+        ZStack(alignment: .bottomTrailing) {
             if spec.hasMemoryIndicator {
                 Circle()
                     .fill(Color.green)
@@ -253,8 +269,6 @@ struct CalculatorButton: View {
                     .padding(6)
                     .accessibilityHidden(true)
             }
-        }
-        .overlay(alignment: .bottomTrailing) {
             if spec.hasClipboardIndicator, let color = spec.clipboardIndicatorColor {
                 Circle()
                     .fill(color)
@@ -264,76 +278,103 @@ struct CalculatorButton: View {
                     .accessibilityHidden(true)
             }
         }
-        .frame(width: targetWidth, height: diameter)
-        .scaleEffect(isPressed ? 0.93 : 1.0)
-        .animation(
-            reduceMotion ? nil : .easeOut(duration: 0.08),
-            value: isPressed
-        )
-        // Long-press: ТОЛЬКО визуально показать «AC» (без вызова clear())
-        .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.5)
-                .onEnded { _ in
-                    if case .clear = spec.label {
-                        isClearHolding = true
-                        longPressConsumed = true
-                    }
-                }
-        )
-        // Сброс long-press при любом изменении expression (ввод, удаление, клавиатура, история)
-        .onChange(of: expression) { _, _ in
-            isClearHolding = false
-        }
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    isPressed = true
-                    longPressConsumed = false
-                }
-                .onEnded { _ in
-                    isPressed = false
+    }
 
-                    // Логика обработки тапа (перенесена из удалённого .onTapGesture)
-                    guard spec.isEnabled else { return }
-
-                    // Длинное нажатие уже обработано LongPressGesture — пропускаем действие
-                    if longPressConsumed {
-                        longPressConsumed = false
-                        return
-                    }
-
-                    // Long-press переключил C → AC: обычный тап вызывает clear() (через .clearAll)
-                    if case .clear = spec.label, isClearHolding {
-                        isClearHolding = false
-                        onTap(.clearAll)
-                    } else {
-                        onTap(spec.label)
-                    }
+    /// Long-press жест: визуально переключает C → AC (без вызова clear())
+    private var longPressGesture: some Gesture {
+        LongPressGesture(minimumDuration: 0.5)
+            .onEnded { _ in
+                if case .clear = spec.label {
+                    isClearHolding = true
+                    longPressConsumed = true
                 }
-        )
-        .accessibilityLabel(accessibilityLabelText)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityHint(spec.accessibilityLabelOverride ?? spec.label.accessibilityDescription)
-        .accessibilityIdentifier("calc_btn_\(displayText.replacingOccurrences(of: "/", with: "div"))")
-        .opacity(spec.isEnabled ? 1.0 : 0.4)
-        .onHover { hovering in isHovered = hovering }
-        .overlay(alignment: .topTrailing) {
-            if isHovered, let tip = spec.memoryTooltip ?? spec.clipboardTooltip {
-                Text(tip)
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(Color.primary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-                    )
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .offset(x: 5, y: -14)
             }
+    }
+
+    /// Tap жест (DragGesture с minimumDistance:0) для обработки нажатий
+    private var tapGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { _ in
+                isPressed = true
+                longPressConsumed = false
+            }
+            .onEnded { _ in
+                isPressed = false
+
+                guard spec.isEnabled else { return }
+
+                if longPressConsumed {
+                    longPressConsumed = false
+                    return
+                }
+
+                if case .clear = spec.label, isClearHolding {
+                    isClearHolding = false
+                    onTap(.clearAll)
+                } else {
+                    onTap(spec.label)
+                }
+            }
+    }
+
+    /// Hover-тултип для кнопок памяти и буфера обмена
+    @ViewBuilder
+    private var tooltipOverlay: some View {
+        if isHovered, let tip = spec.memoryTooltip ?? spec.clipboardTooltip {
+            Text(tip)
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(Color.primary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color.gray.opacity(0.5), lineWidth: 1)
+                )
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .offset(x: 5, y: -14)
         }
+    }
+
+    // MARK: Body
+
+    var body: some View {
+        let targetWidth: CGFloat = spec.isWide ? diameter * 2 + spacing : diameter
+
+        buttonContent
+            .frame(width: targetWidth, height: diameter)
+            .background(
+                isPressed
+                    ? CalculatorColors.pressedColor(for: backgroundColor)
+                    : backgroundColor
+            )
+            .clipShape(AnyShape(RoundedRectangle(cornerRadius: buttonCornerRadius)))
+            .overlay {
+                if hasBorder && !spec.isWide {
+                    RoundedRectangle(cornerRadius: buttonCornerRadius)
+                        .stroke(borderColor, lineWidth: 1.0)
+                }
+            }
+            .overlay(alignment: .bottomTrailing) { indicatorsOverlay }
+            .frame(width: targetWidth, height: diameter)
+            .scaleEffect(isPressed ? 0.93 : 1.0)
+            .animation(
+                reduceMotion ? nil : .easeOut(duration: 0.08),
+                value: isPressed
+            )
+            .simultaneousGesture(longPressGesture)
+            .onChange(of: expression) { _, _ in
+                isClearHolding = false
+            }
+            .simultaneousGesture(tapGesture)
+            .accessibilityLabel(accessibilityLabelText)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityHint(spec.accessibilityLabelOverride ?? spec.label.accessibilityDescription)
+            .accessibilityIdentifier("calc_btn_\(spec.label.accessibilityIdentifierSuffix)")
+            .opacity(spec.isEnabled ? 1.0 : 0.4)
+            .onHover { hovering in isHovered = hovering }
+            .overlay(alignment: .topTrailing) { tooltipOverlay }
     }
 }
 

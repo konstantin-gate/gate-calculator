@@ -129,8 +129,7 @@ public struct Tokenizer: Sendable {
                 i = str.index(after: i)
             }
 
-            if numStr.lastIndex(of: ",") != nil {
-                let lastCommaIdx = numStr.lastIndex(of: ",")!
+            if let lastCommaIdx = numStr.lastIndex(of: ",") {
 
                 // Проверяем: каждая запятая должна иметь ровно 3 символа
                 // между собой и следующей запятой (или концом строки)
