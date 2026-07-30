@@ -1,13 +1,5 @@
 /* Russian localization */
 
-/* Display */
-"display.default" = "0";
-"display.expression" = "%@";
-
-/* Buttons */
-"button.clear" = "C";
-"button.equals" = "=";
-
 /* History */
 "history.title" = "История";
 "history.empty.title" = "Нет истории";
@@ -27,6 +19,9 @@
 
 /* Ошибки (дополнительные) */
 "errors.negativeSquareRoot" = "Корень из отрицательного числа";
+"errors.invalidExpressionWithDetail" = "Некорректное выражение: %@";
+"errors.invalidCharacterWithDetail" = "Недопустимый символ: %@";
+"errors.invalidNumberWithDetail" = "Некорректное число: %@";
 
 /* Clipboard */
 "clipboard.copy" = "Копировать результат";

@@ -162,6 +162,7 @@ struct ButtonSpec: Identifiable {
     var clipboardIndicatorColor: Color? = nil
     var clipboardTooltip: String? = nil
     var clipboardIndicatorBorderColor: Color? = nil
+    var accessibilityValueOverride: String? = nil
 }
 
 // MARK: - Кнопка калькулятора (скруглённые квадраты, macOS Tahoe style)
@@ -349,7 +350,7 @@ struct CalculatorButton: View {
                     ? CalculatorColors.pressedColor(for: backgroundColor)
                     : backgroundColor
             )
-            .clipShape(AnyShape(RoundedRectangle(cornerRadius: buttonCornerRadius)))
+            .clipShape(RoundedRectangle(cornerRadius: buttonCornerRadius))
             .overlay {
                 if hasBorder && !spec.isWide {
                     RoundedRectangle(cornerRadius: buttonCornerRadius)
@@ -372,18 +373,9 @@ struct CalculatorButton: View {
             .accessibilityAddTraits(.isButton)
             .accessibilityHint(spec.accessibilityLabelOverride ?? spec.label.accessibilityDescription)
             .accessibilityIdentifier("calc_btn_\(spec.label.accessibilityIdentifierSuffix)")
+            .accessibilityValue(spec.accessibilityValueOverride ?? "")
             .opacity(spec.isEnabled ? 1.0 : 0.4)
             .onHover { hovering in isHovered = hovering }
             .overlay(alignment: .topTrailing) { tooltipOverlay }
     }
 }
-
-// MARK: - AnyShape (для совместимости типов Shape)
-
-struct AnyShape: Shape {
-    private let _path: @Sendable (CGRect) -> Path
-    init<S: Shape>(_ shape: S) { _path = { rect in shape.path(in: rect) } }
-    func path(in rect: CGRect) -> Path { _path(rect) }
-}
-
-extension AnyShape: @unchecked Sendable {}

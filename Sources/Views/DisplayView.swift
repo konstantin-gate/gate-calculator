@@ -84,6 +84,7 @@ struct DisplayView: View {
         .padding(.bottom, Self.paddingBottom)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityDescription)
+        .accessibilityIdentifier("display_view")
     }
 
     // MARK: - Строка выражения (показывается при активном вводе)

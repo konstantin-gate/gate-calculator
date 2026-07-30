@@ -38,12 +38,9 @@ final class CalculatorViewModel {
 
     var historyCount: Int { historyEntries.count }
 
-    private var memoryValue: Decimal = 0
+    private var memoryState = MemoryState()
 
-    /// Кэш последнего вычисленного значения дисплея.
-    private var cachedDisplayValue: Decimal?
-    /// Выражение, соответствующее значению в `cachedDisplayValue`.
-    private var cachedExpression: String = ""
+    private var displayCache = DisplayCache()
 
     /// Текущее значение на дисплее для операций памяти.
     /// Если есть resultDecimal — возвращает его.
@@ -52,25 +49,23 @@ final class CalculatorViewModel {
         if let result = resultDecimal {
             return result
         }
-        let trimmed = expression.trimmingCharacters(in: .whitespaces)
+        let trimmed = trimmedExpression
         guard !trimmed.isEmpty else { return nil }
-        if trimmed == cachedExpression {
-            return cachedDisplayValue
+        if trimmed == displayCache.cachedExpression {
+            return displayCache.cachedDisplayValue
         }
         do {
             let val = try engine.evaluate(trimmed)
-            cachedExpression = trimmed
-            cachedDisplayValue = val
+            displayCache.update(expression: trimmed, value: val)
             return val
         } catch {
-            cachedExpression = trimmed
-            cachedDisplayValue = nil
+            displayCache.update(expression: trimmed, value: nil)
             return nil
         }
     }
 
     /// Есть ли непустое значение в памяти (используется UI для визуальной индикации)
-    var hasMemory: Bool { memoryValue != 0 }
+    var hasMemory: Bool { memoryState.hasMemory }
 
     // MARK: - Кэш значения дисплея
 
@@ -78,14 +73,12 @@ final class CalculatorViewModel {
     /// Вызывается при любом изменении `expression`,
     /// чтобы не возвращать устаревшее кэшированное значение.
     private func invalidateDisplayCache() {
-        cachedExpression = ""
-        cachedDisplayValue = nil
+        displayCache.invalidate()
     }
 
     /// Отформатированное значение памяти для отображения в UI (tooltip, индикация)
     var memoryDisplayValue: String? {
-        guard memoryValue != 0 else { return nil }
-        return formatter.format(memoryValue)
+        memoryState.displayValue(formatter: formatter)
     }
 
     /// Инициализация ViewModel с инъекцией зависимостей.
@@ -99,7 +92,9 @@ final class CalculatorViewModel {
         self.historyService = historyService
         self.formatter = formatter
         self.clipboardManager = clipboardManager
-        historyEntries = historyService.getEntries()
+        Task {
+            self.historyEntries = await historyService.getEntries()
+        }
     }
 
     func appendCharacter(_ char: String) {
@@ -111,14 +106,12 @@ final class CalculatorViewModel {
 
         if hasResult && !isOperator(char) {
             expression = ""
-            result = nil
-            resultDecimal = nil
+            clearResultState()
         } else if hasResult && isOperator(char) {
             if let dec = savedResultDecimal {
                 expression = formatter.format(dec)
             }
-            result = nil
-            resultDecimal = nil
+            clearResultState()
         }
 
         expression += char
@@ -131,34 +124,22 @@ final class CalculatorViewModel {
     func evaluate() {
         clearError()
 
-        let trimmed = expression.trimmingCharacters(in: .whitespaces)
+        let trimmed = trimmedExpression
         guard !trimmed.isEmpty else { return }
 
         do {
             let value = try engine.evaluate(expression)
-            let formatted = formatter.format(value)
-
-            // Всегда добавляем в историю успешные вычисления
-            saveToHistory(expression: expression, result: value)
-
-            result = formatted
-            resultDecimal = value
-            invalidateDisplayCache()
+            setResultState(value: value, historyExpression: expression)
             expression = ""
         } catch {
-            if let calcError = error as? CalculatorError {
-                errorMessage = calcError.localizedMessage
-            } else {
-                errorMessage = error.localizedDescription
-            }
+            handleError(error)
         }
     }
 
     func clear() {
         expression = ""
         invalidateDisplayCache()
-        result = nil
-        resultDecimal = nil
+        clearResultState()
         errorMessage = nil
     }
 
@@ -197,13 +178,12 @@ final class CalculatorViewModel {
 
         // Сбросить result/resultDecimal,
         // чтобы DisplayView показал урезанное expression
-        result = nil
-        resultDecimal = nil
+        clearResultState()
     }
 
     /// Удаляет последний операнд (последовательность [0-9.]) или один последний символ-оператор/скобку.
     private func removeLastOperandOrOperator() {
-        let trimmed = expression.trimmingCharacters(in: .whitespaces)
+        let trimmed = trimmedExpression
         guard !trimmed.isEmpty else { return }
 
         let chars = Array(trimmed)
@@ -246,8 +226,7 @@ final class CalculatorViewModel {
 
         if !expression.isEmpty {
             // Сбросить result/resultDecimal, чтобы DisplayView показал expression
-            result = nil
-            resultDecimal = nil
+            clearResultState()
             expression.removeLast()
             invalidateDisplayCache()
             // tryAutoEvaluate() НЕ вызывается — автовычисление при backspace не нужно
@@ -310,32 +289,33 @@ final class CalculatorViewModel {
     /// - Parameter expression: Текущее выражение (не пустое, не простой термин).
     /// - Returns: Выражение с инвертированным знаком.
     private func toggleComplexExpressionSign(_ expression: String) -> String {
-        // Обёрнутое отрицание: -(выражение) → выражение
         if let inner = CalculatorEngine.isWrappedNegativeExpression(expression) {
             return inner
         }
 
         if expression.hasPrefix("-") {
-            let trimmed = expression.trimmingCharacters(in: .whitespaces)
-            guard !trimmed.isEmpty,
-                  !CalculatorEngine.isTrailingOperator(expression),
-                  !CalculatorEngine.hasUnclosedParentheses(trimmed) else {
-                // Краевой случай: выражение состоит только из "-" или "+"
-                if trimmed == "-" || trimmed == "+" {
-                    return ""
-                }
-                return "-(\(expression))"
-            }
-
-            do {
-                let value = try engine.evaluate(expression)
-                let negated = -value
-                return negated.description
-            } catch {
-                return "-(\(expression))"
-            }
+            return negateExpressionWithLeadingMinus(expression)
         } else {
-            // Не начинается с -, оборачиваем в -(выражение)
+            return "-(\(expression))"
+        }
+    }
+
+    private func negateExpressionWithLeadingMinus(_ expression: String) -> String {
+        let trimmed = trimmedExpression
+
+        guard !trimmed.isEmpty, isReadyForEvaluation else {
+            if trimmed == "-" || trimmed == "+" { return "" }
+            return "-(\(expression))"
+        }
+
+        return evaluateAndNegate(expression)
+    }
+
+    private func evaluateAndNegate(_ expression: String) -> String {
+        do {
+            let value = try engine.evaluate(expression)
+            return (-value).description
+        } catch {
             return "-(\(expression))"
         }
     }
@@ -359,12 +339,9 @@ final class CalculatorViewModel {
         }
 
         let sqrtDecimal = CalculatorEngine.newtonSquareRoot(value)
-
         let sqrtExpression = "√(" + (expression.isEmpty ? formatter.format(value) : expression) + ")"
-        saveToHistory(expression: sqrtExpression, result: sqrtDecimal)
 
-        result = formatter.format(sqrtDecimal)
-        resultDecimal = sqrtDecimal
+        setResultState(value: sqrtDecimal, historyExpression: sqrtExpression)
         expression = ""
     }
 
@@ -379,33 +356,31 @@ final class CalculatorViewModel {
         }
 
         let squared = value * value
+        let squareExpression = "(\(expression.isEmpty ? formatter.format(value) : expression))²"
 
-        saveToHistory(expression: "(\(expression.isEmpty ? formatter.format(value) : expression))²", result: squared)
-
-        result = formatter.format(squared)
-        resultDecimal = squared
+        setResultState(value: squared, historyExpression: squareExpression)
         expression = ""
     }
 
     // MARK: - Memory operations (SRS §39-43)
 
     func memoryClear() {
-        memoryValue = 0
+        memoryState.clear()
     }
 
     func memoryAdd() {
         guard let val = currentDisplayValue else { return }
-        memoryValue += val
+        memoryState.add(val)
     }
 
     func memorySubtract() {
         guard let val = currentDisplayValue else { return }
-        memoryValue -= val
+        memoryState.subtract(val)
     }
 
     func memoryRecall() {
         clearError()
-        let memStr = memoryValue.description
+        let memStr = memoryState.valueDescription
 
         if !expression.isEmpty && CalculatorEngine.isTrailingOperator(expression) {
             expression += memStr
@@ -414,8 +389,7 @@ final class CalculatorViewModel {
         }
         invalidateDisplayCache()
 
-        result = nil
-        resultDecimal = nil
+        clearResultState()
     }
 
     // MARK: - Clipboard
@@ -428,17 +402,10 @@ final class CalculatorViewModel {
 
         do {
             let value = try engine.evaluate(trimmed)
-            expression = trimmed      // Показать выражение пользователю
-            invalidateDisplayCache()
-            result = formatter.format(value)  // Показать результат
-            resultDecimal = value
-            saveToHistory(expression: trimmed, result: value)
+            expression = trimmed
+            setResultState(value: value, historyExpression: trimmed)
         } catch {
-            if let calcError = error as? CalculatorError {
-                errorMessage = calcError.localizedMessage
-            } else {
-                errorMessage = error.localizedDescription
-            }
+            handleError(error)
         }
     }
 
@@ -459,28 +426,21 @@ final class CalculatorViewModel {
     func useHistoryEntry(_ entry: HistoryEntry) {
         expression = entry.expression
         invalidateDisplayCache()
-        result = nil
+        clearResultState()
         errorMessage = nil
         tryAutoEvaluate()
     }
 
-    private func saveToHistory(expression: String, result: Decimal) {
-        let formatted = formatter.format(result)
-        historyService.add(expression: expression, result: result, formattedResult: formatted)
-        historyEntries = historyService.getEntries()
-    }
-
     /// Очищает историю вычислений
     func clearHistory() {
-        historyService.clear()
-        historyEntries = []
+        Task {
+            await historyService.clear()
+            self.historyEntries = []
+        }
     }
 
     private func tryAutoEvaluate() {
-        let trimmed = expression.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty,
-              !CalculatorEngine.isTrailingOperator(expression),
-              !CalculatorEngine.hasUnclosedParentheses(trimmed) else { return }
+        guard isReadyForEvaluation else { return }
 
         do {
             let value = try engine.evaluate(expression)
@@ -515,5 +475,42 @@ final class CalculatorViewModel {
 
     private func isDigitOrDecimal(_ char: String) -> Bool {
         return char == "." || (char.count == 1 && char.first?.isNumber == true)
+    }
+
+    // MARK: - Вспомогательные методы
+
+    private func handleError(_ error: Error) {
+        if let calcError = error as? CalculatorError {
+            errorMessage = calcError.localizedMessage
+        } else {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func clearResultState() {
+        result = nil
+        resultDecimal = nil
+    }
+
+    private var trimmedExpression: String {
+        expression.trimmingCharacters(in: .whitespaces)
+    }
+
+    private var isReadyForEvaluation: Bool {
+        let trimmed = trimmedExpression
+        return !trimmed.isEmpty &&
+               !CalculatorEngine.isTrailingOperator(expression) &&
+               !CalculatorEngine.hasUnclosedParentheses(trimmed)
+    }
+
+    private func setResultState(value: Decimal, historyExpression: String) {
+        let formatted = formatter.format(value)
+        Task {
+            await historyService.add(expression: historyExpression, result: value, formattedResult: formatted)
+            self.historyEntries = await historyService.getEntries()
+        }
+        result = formatted
+        resultDecimal = value
+        invalidateDisplayCache()
     }
 }

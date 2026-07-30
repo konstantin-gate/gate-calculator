@@ -8,23 +8,21 @@ extension CalculatorError {
         case .divisionByZero:
             return localizedString("errors.divisionByZero", comment: "")
         case .invalidExpression(let msg):
-            // Пытаемся локализовать внутреннее сообщение, если для него есть ключ
             let localizedMsg = localizedString(msg, comment: "")
             if localizedMsg != msg {
                 return localizedMsg
             }
-            // Иначе возвращаем общую ошибку с подробностями
-            return localizedString("errors.invalidExpression", comment: "") + ": \(msg)"
+            return String.localizedStringWithFormat(localizedString("errors.invalidExpressionWithDetail", comment: ""), msg)
         case .missingClosingParenthesis:
             return localizedString("errors.missingParenthesis", comment: "")
         case .extraClosingParenthesis:
             return localizedString("errors.extraParenthesis", comment: "")
         case .invalidCharacter(let char):
-            return localizedString("errors.invalidCharacter", comment: "") + ": \(char)"
+            return String.localizedStringWithFormat(localizedString("errors.invalidCharacterWithDetail", comment: ""), char)
         case .emptyExpression:
             return localizedString("errors.emptyExpression", comment: "")
         case .invalidNumber(let num):
-            return localizedString("errors.invalidNumber", comment: "") + ": \(num)"
+            return String.localizedStringWithFormat(localizedString("errors.invalidNumberWithDetail", comment: ""), num)
         case .doubleOperator:
             return localizedString("errors.doubleOperator", comment: "")
         }

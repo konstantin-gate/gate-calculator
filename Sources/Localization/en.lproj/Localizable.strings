@@ -1,13 +1,5 @@
 /* English localization */
 
-/* Display */
-"display.default" = "0";
-"display.expression" = "%@";
-
-/* Buttons */
-"button.clear" = "C";
-"button.equals" = "=";
-
 /* History */
 "history.title" = "History";
 "history.empty.title" = "No History";
@@ -27,6 +19,9 @@
 
 /* Errors (additional) */
 "errors.negativeSquareRoot" = "Square root of negative number";
+"errors.invalidExpressionWithDetail" = "Invalid expression: %@";
+"errors.invalidCharacterWithDetail" = "Invalid character: %@";
+"errors.invalidNumberWithDetail" = "Invalid number: %@";
 
 /* Clipboard */
 "clipboard.copy" = "Copy result";

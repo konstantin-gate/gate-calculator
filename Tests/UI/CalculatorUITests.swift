@@ -75,7 +75,7 @@ final class CalculatorUITests: XCTestCase {
         app.buttons["calc_btn_6"].tap()
         app.buttons["calc_btn_="].tap()
 
-        let display = app.otherElements.firstMatch(where: { $0.label.contains("Результат") })
+        let display = app.otherElements["display_view"]
         XCTAssertTrue(display.exists, "Display should show result")
         XCTAssertTrue(display.label.contains("31"), "Display should contain '31'")
     }
@@ -95,7 +95,7 @@ final class CalculatorUITests: XCTestCase {
         app.buttons["calc_btn_5"].tap()
         app.buttons["calc_btn_="].tap()
 
-        let display = app.otherElements.firstMatch(where: { $0.label.contains("Результат") })
+        let display = app.otherElements["display_view"]
         XCTAssertTrue(display.exists, "Display should show result")
         XCTAssertTrue(display.label.contains("155"), "Display should contain '155'")
     }
@@ -111,7 +111,7 @@ final class CalculatorUITests: XCTestCase {
         app.buttons["calc_btn_0"].tap()
         app.buttons["calc_btn_="].tap()
 
-        let display = app.otherElements.firstMatch(where: { $0.label.contains("Ошибка") })
+        let display = app.otherElements["display_view"]
         XCTAssertTrue(display.exists, "Display should show error for division by zero")
     }
 
@@ -126,7 +126,7 @@ final class CalculatorUITests: XCTestCase {
         app.typeText("2")
         app.typeText("\r")
 
-        let display = app.otherElements.firstMatch(where: { $0.label.contains("Результат") })
+        let display = app.otherElements["display_view"]
         XCTAssertTrue(display.exists, "Display should show result")
         XCTAssertTrue(display.label.contains("3"), "Display should contain '3'")
     }
@@ -143,7 +143,7 @@ final class CalculatorUITests: XCTestCase {
 
         app.keyDown(using: .command, "v")
 
-        let display = app.otherElements.firstMatch(where: { $0.label.contains("Результат") })
+        let display = app.otherElements["display_view"]
         XCTAssertTrue(display.exists, "Display should show result after paste")
         XCTAssertTrue(display.label.contains("155"), "Display should contain '155' after paste")
     }
@@ -168,7 +168,7 @@ final class CalculatorUITests: XCTestCase {
         app.buttons["calc_btn_4"].tap()
         app.buttons["calc_btn_√"].tap()
 
-        let display = app.otherElements.firstMatch(where: { $0.label.contains("Результат") })
+        let display = app.otherElements["display_view"]
         XCTAssertTrue(display.exists, "Display should show result")
         XCTAssertTrue(display.label.contains("2"), "Display should contain '2' (√4 = 2)")
     }
@@ -180,7 +180,7 @@ final class CalculatorUITests: XCTestCase {
         app.buttons["calc_btn_5"].tap()
         app.buttons["calc_btn_x²"].tap()
 
-        let display = app.otherElements.firstMatch(where: { $0.label.contains("Результат") })
+        let display = app.otherElements["display_view"]
         XCTAssertTrue(display.exists, "Display should show result")
         XCTAssertTrue(display.label.contains("25"), "Display should contain '25' (5² = 25)")
     }
@@ -205,8 +205,8 @@ final class CalculatorUITests: XCTestCase {
         // Вызываем память (MR) → должно быть 7 (10 - 3)
         app.buttons["calc_btn_MR"].tap()
         // MR записывает значение в expression, поэтому проверяем accessibilityLabel
-        let displayAny = app.otherElements.firstMatch(where: { $0.label.contains("7") })
-        XCTAssertTrue(displayAny.exists, "Display should contain '7' after memory recall")
+        let display = app.otherElements["display_view"]
+        XCTAssertTrue(display.exists, "Display should contain '7' after memory recall")
         // Очищаем память (MC)
         app.buttons["calc_btn_MC"].tap()
     }
@@ -238,7 +238,7 @@ final class CalculatorUITests: XCTestCase {
         app.buttons["calc_btn_)"].tap()
         app.buttons["calc_btn_="].tap()
 
-        let display = app.otherElements.firstMatch(where: { $0.label.contains("Результат") })
+        let display = app.otherElements["display_view"]
         XCTAssertTrue(display.exists, "Display should show result")
         XCTAssertTrue(display.label.contains("5"), "Display should contain '5' ((2+3) = 5)")
     }
@@ -254,7 +254,7 @@ final class CalculatorUITests: XCTestCase {
         app.buttons["calc_btn_3"].tap()
         app.buttons["calc_btn_⌫"].tap()
 
-        let display = app.otherElements.firstMatch(where: { $0.label.contains("12") })
+        let display = app.otherElements["display_view"]
         XCTAssertTrue(display.exists, "Display should contain '12' after backspace")
     }
 
@@ -267,7 +267,7 @@ final class CalculatorUITests: XCTestCase {
         app.buttons["calc_btn_5"].tap()
         app.buttons["calc_btn_+/−"].tap()
 
-        let display = app.otherElements.firstMatch(where: { $0.label.contains("-5") || $0.label.contains("−5") })
+        let display = app.otherElements["display_view"]
         XCTAssertTrue(display.exists, "Display should contain '-5' after toggle sign")
     }
 
@@ -295,7 +295,7 @@ final class CalculatorUITests: XCTestCase {
         app.buttons["calc_btn_3"].tap()
         app.keys["escape"].tap()
 
-        let display = app.otherElements.firstMatch(where: { $0.label.contains("Ноль") || $0.label.contains("0") })
+        let display = app.otherElements["display_view"]
         XCTAssertTrue(display.exists, "Display should show '0' after Escape")
     }
 
@@ -308,7 +308,7 @@ final class CalculatorUITests: XCTestCase {
         app.buttons["calc_btn_6"].tap()
         app.keys["delete"].tap()
 
-        let display = app.otherElements.firstMatch(where: { $0.label.contains("45") })
+        let display = app.otherElements["display_view"]
         XCTAssertTrue(display.exists, "Display should contain '45' after keyboard backspace")
     }
 
@@ -344,7 +344,7 @@ final class CalculatorUITests: XCTestCase {
         app.keyDown(using: .command, "v")
         app.buttons["calc_btn_="].tap()
 
-        let display = app.otherElements.firstMatch(where: { $0.label.contains("Результат") })
+        let display = app.otherElements["display_view"]
         XCTAssertTrue(display.exists, "Display should show result after paste")
         XCTAssertTrue(display.label.contains("15"), "Display should contain '15' after paste from clipboard")
     }
@@ -360,7 +360,7 @@ final class CalculatorUITests: XCTestCase {
         app.buttons["calc_btn_+"].tap()
         app.buttons["calc_btn_="].tap()
 
-        let display = app.otherElements.firstMatch(where: { $0.label.contains("Ошибка") })
+        let display = app.otherElements["display_view"]
         XCTAssertTrue(display.exists, "Display should show error for invalid expression")
     }
 
@@ -376,7 +376,7 @@ final class CalculatorUITests: XCTestCase {
 
         // Нажимаем C (expression = "123", кнопка = calc_btn_C)
         app.buttons["calc_btn_C"].tap()
-        let display12 = app.otherElements.firstMatch(where: { $0.label.contains("12") })
+        let display12 = app.otherElements["display_view"]
         XCTAssertTrue(display12.exists, "Display should contain '12' after pressing C")
 
         // Нажимаем C ещё раз (expression = "12", кнопка = calc_btn_C)
@@ -386,7 +386,7 @@ final class CalculatorUITests: XCTestCase {
         app.buttons["calc_btn_C"].tap()
 
         // Теперь expression пуст → кнопка = calc_btn_AC
-        let displayZero = app.otherElements.firstMatch(where: { $0.label.contains("Ноль") })
+        let displayZero = app.otherElements["display_view"]
         XCTAssertTrue(displayZero.exists, "Display should show '0' after clearing all")
     }
 
@@ -402,7 +402,7 @@ final class CalculatorUITests: XCTestCase {
         app.buttons["calc_btn_4"].tap()
         app.buttons["calc_btn_="].tap()
 
-        let display = app.otherElements.firstMatch(where: { $0.label.contains("3") })
+        let display = app.otherElements["display_view"]
         XCTAssertTrue(display.exists, "Display should contain '3' (decimal number)")
     }
 }

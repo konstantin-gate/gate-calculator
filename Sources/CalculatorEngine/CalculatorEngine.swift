@@ -48,6 +48,7 @@ public struct CalculatorEngine: Sendable {
     /// - Parameter value: Неотрицательное значение Decimal.
     /// - Returns: Квадратный корень из value с точностью до 1e-28.
     public static func newtonSquareRoot(_ value: Decimal) -> Decimal {
+        guard value >= 0 else { return .nan }
         guard value != 0 else { return Decimal(0) }
 
         var x = value >= 1 ? value : Decimal(1)

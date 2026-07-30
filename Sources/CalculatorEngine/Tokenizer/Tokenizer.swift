@@ -63,8 +63,7 @@ public struct Tokenizer: Sendable {
             }
 
             if char == "-" {
-                let isUnary = tokens.isEmpty ||
-                    lastTokenIsOperatorOrLeftParen(tokens)
+                let isUnary = tokens.isEmpty || isOperatorOrLeftParen(tokens.last!)
 
                 if isUnary {
                     tokens.append(.unaryMinus)
@@ -340,16 +339,6 @@ public struct Tokenizer: Sendable {
         }
 
         throw CalculatorError.invalidNumber(octStr)
-    }
-
-    private func lastTokenIsOperatorOrLeftParen(_ tokens: [Token]) -> Bool {
-        guard let last = tokens.last else { return true }
-        switch last {
-        case .binaryOperator, .unaryMinus, .leftParenthesis:
-            return true
-        default:
-            return false
-        }
     }
 
     private func validateTokenSequence(_ tokens: [Token]) throws {

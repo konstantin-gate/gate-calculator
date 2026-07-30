@@ -26,8 +26,6 @@ extension BinaryOperator {
             return .multiplication
         }
     }
-
-    var isLeftAssociative: Bool { true }
 }
 
 extension Token {

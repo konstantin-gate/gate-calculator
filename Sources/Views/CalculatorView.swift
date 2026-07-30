@@ -7,10 +7,11 @@ struct CalculatorView: View {
     @Bindable var viewModel: CalculatorViewModel
     @Binding var showHistory: Bool
 
-    // Константы размеров — спецификация SRS §42
-    private let buttonDiameter: CGFloat = 60
-    private let buttonFontSize: CGFloat = 18
-    private let buttonSpacing: CGFloat = 8
+    private enum LayoutMetrics {
+        static let buttonDiameter: CGFloat = 60
+        static let buttonFontSize: CGFloat = 18
+        static let buttonSpacing: CGFloat = 8
+    }
 
     /// Определяет, какую метку показывать на динамической кнопке очистки.
     /// true — показать «AC» (полная очистка): expression пуст.
@@ -76,7 +77,7 @@ struct CalculatorView: View {
 
     @ViewBuilder
     private var standardButtonGrid: some View {
-        VStack(spacing: buttonSpacing) {
+        VStack(spacing: LayoutMetrics.buttonSpacing) {
             // Ряд 1: скобки, буфер обмена, backspace, AC/C (динамическая)
             buttonRow([
                 ButtonSpec(label: .openParen,      type: .function),
@@ -93,7 +94,8 @@ struct CalculatorView: View {
                 ButtonSpec(
                     label: .mR, type: .function,
                     isEnabled: viewModel.hasMemory,
-                    memoryTooltip: viewModel.memoryDisplayValue
+                    memoryTooltip: viewModel.memoryDisplayValue,
+                    accessibilityValueOverride: viewModel.memoryDisplayValue ?? ""
                 ),
                 ButtonSpec(label: .divide,         type: .operator),
             ])
@@ -135,11 +137,11 @@ struct CalculatorView: View {
 
     @ViewBuilder
     private func buttonRow(_ specs: [ButtonSpec]) -> some View {
-        HStack(spacing: buttonSpacing) {
+        HStack(spacing: LayoutMetrics.buttonSpacing) {
             ForEach(specs) { spec in
                 CalculatorButton(
-                    spec: spec, diameter: buttonDiameter,
-                    fontSize: buttonFontSize, spacing: buttonSpacing,
+                    spec: spec, diameter: LayoutMetrics.buttonDiameter,
+                    fontSize: LayoutMetrics.buttonFontSize, spacing: LayoutMetrics.buttonSpacing,
                     onTap: { label in
                         handleButtonPress(label)
                     }, expression: viewModel.expression
