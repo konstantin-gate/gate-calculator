@@ -45,8 +45,11 @@ public struct CalculatorEngine: Sendable {
     /// Вычисляет квадратный корень методом Ньютона (Герона) для Decimal.
     /// Квадратичная сходимость: не более 5–7 итераций для 28 значащих цифр.
     ///
+    /// - Precondition: `value >= 0`. При отрицательном значении возвращает `Decimal.nan` —
+    ///   контракт осознанный, вызывающая сторона обязана проверить вход заранее
+    ///   (в приложении это делает `CalculatorViewModel.calculateSquareRoot()`).
     /// - Parameter value: Неотрицательное значение Decimal.
-    /// - Returns: Квадратный корень из value с точностью до 1e-28.
+    /// - Returns: Квадратный корень из value с точностью до 1e-28, или `.nan` если `value < 0`.
     public static func newtonSquareRoot(_ value: Decimal) -> Decimal {
         guard value >= 0 else { return .nan }
         guard value != 0 else { return Decimal(0) }

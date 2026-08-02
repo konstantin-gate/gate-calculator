@@ -10,6 +10,17 @@ public struct Tokenizer: Sendable {
     /// Создаёт новый экземпляр токенизатора.
     public init() {}
 
+    /// Односимвольные токены без контекстной логики.
+    /// Минус обрабатывается отдельно (унарный/бинарный символ зависит от контекста).
+    private let singleCharTokens: [Character: Token] = [
+        "(": .leftParenthesis,
+        ")": .rightParenthesis,
+        "+": .binaryOperator(.add),
+        "%": .percent,
+        "*": .binaryOperator(.multiply),
+        "/": .binaryOperator(.divide),
+    ]
+
     /// Токенизирует математическое выражение.
     public func tokenize(_ input: String) throws -> [Token] {
         let cleaned = try preprocess(input)
@@ -26,38 +37,8 @@ public struct Tokenizer: Sendable {
                 continue
             }
 
-            if char == "(" {
-                tokens.append(.leftParenthesis)
-                advance(&i, in: cleaned)
-                continue
-            }
-
-            if char == ")" {
-                tokens.append(.rightParenthesis)
-                advance(&i, in: cleaned)
-                continue
-            }
-
-            if char == "+" {
-                tokens.append(.binaryOperator(.add))
-                advance(&i, in: cleaned)
-                continue
-            }
-
-            if char == "%" {
-                tokens.append(.percent)
-                advance(&i, in: cleaned)
-                continue
-            }
-
-            if char == "*" {
-                tokens.append(.binaryOperator(.multiply))
-                advance(&i, in: cleaned)
-                continue
-            }
-
-            if char == "/" {
-                tokens.append(.binaryOperator(.divide))
+            if let token = singleCharTokens[char] {
+                tokens.append(token)
                 advance(&i, in: cleaned)
                 continue
             }
@@ -108,6 +89,36 @@ public struct Tokenizer: Sendable {
         return result
     }
 
+    // Описывает обработку числового блока с запятыми
+    private struct NumericRunCommas {
+        let commaIndices: [String.Index]  // позиции запятых в блоке (в порядке обхода)
+        let allHaveThreeDigits: Bool      // все запятые — разделители тысяч (по 3 цифры после каждой)
+    }
+
+    // Собирает позиции запятых и проверяет, являются ли все из них
+    // разделителями тысяч: после каждой запятой ровно 3 цифры до следующей
+    // запятой или конца блока.
+    private func analyzeNumericRunCommas(_ numStr: String) -> NumericRunCommas {
+        var commaIndices: [String.Index] = []
+        for idx in numStr.indices where numStr[idx] == "," {
+            commaIndices.append(idx)
+        }
+
+        var allHaveThreeDigits = true
+        var boundary = numStr.endIndex
+        for commaIdx in commaIndices.reversed() {
+            let afterIdx = numStr.index(after: commaIdx)
+            let count = numStr.distance(from: afterIdx, to: boundary)
+            if count != 3 {
+                allHaveThreeDigits = false
+                break
+            }
+            boundary = commaIdx
+        }
+
+        return NumericRunCommas(commaIndices: commaIndices, allHaveThreeDigits: allHaveThreeDigits)
+    }
+
     // Обрабатывает запятые: десятичные → точки, разделители тысяч → удаление
     private func convertDecimalCommas(_ str: String) -> String {
         var result = ""
@@ -129,29 +140,9 @@ public struct Tokenizer: Sendable {
             }
 
             if let lastCommaIdx = numStr.lastIndex(of: ",") {
+                let analysis = analyzeNumericRunCommas(numStr)
 
-                // Проверяем: каждая запятая должна иметь ровно 3 символа
-                // между собой и следующей запятой (или концом строки)
-                var allHaveThreeDigits = true
-                var boundary = numStr.endIndex
-                // Собираем индексы запятых и проверяем от последней к первой
-                var commaIndices: [String.Index] = []
-                for idx in numStr.indices {
-                    if numStr[idx] == "," {
-                        commaIndices.append(idx)
-                    }
-                }
-                for commaIdx in commaIndices.reversed() {
-                    let afterIdx = numStr.index(after: commaIdx)
-                    let count = numStr.distance(from: afterIdx, to: boundary)
-                    if count != 3 {
-                        allHaveThreeDigits = false
-                        break
-                    }
-                    boundary = commaIdx
-                }
-
-                if allHaveThreeDigits {
+                if analysis.allHaveThreeDigits {
                     var cleanedNum = String(numStr)
                     cleanedNum.removeAll(where: { $0 == "," })
                     result.append(cleanedNum)

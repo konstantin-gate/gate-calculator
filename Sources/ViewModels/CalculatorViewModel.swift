@@ -15,6 +15,7 @@ final class CalculatorViewModel {
     private let historyService: HistoryService
     private let formatter: NumberFormatterService
     private let clipboardManager: ClipboardManager
+    private let signToggler: SignToggler
 
     var hasResult: Bool { resultDecimal != nil }
 
@@ -92,9 +93,14 @@ final class CalculatorViewModel {
         self.historyService = historyService
         self.formatter = formatter
         self.clipboardManager = clipboardManager
-        Task {
-            self.historyEntries = await historyService.getEntries()
-        }
+        self.signToggler = SignToggler(engine: engine)
+    }
+
+    /// Загружает записи истории из HistoryService.
+    /// Вызывается из CalculatorView через модификатор .task — SwiftUI отменяет
+    /// задачу автоматически при исчезновении View.
+    func loadInitialHistory() async {
+        historyEntries = await historyService.getEntries()
     }
 
     func appendCharacter(_ char: String) {
@@ -239,16 +245,10 @@ final class CalculatorViewModel {
     func toggleSign() {
         if expression.isEmpty {
             toggleSignOfResult()
-            invalidateDisplayCache()
-        // ОСОЗНАННЫЙ ПРОПУСК ОШИБКИ: isSimpleTerm выбрасывает CalculatorError при невалидном выражении.
-        // В таком случае термин точно не простой, и ветка else корректно обрабатывает его через toggleComplexExpressionSign.
-        } else if let isSimple = try? CalculatorEngine.isSimpleTerm(expression), isSimple {
-            expression = toggleSimpleTermSign(expression)
-            invalidateDisplayCache()
         } else {
-            expression = toggleComplexExpressionSign(expression)
-            invalidateDisplayCache()
+            expression = signToggler.toggledExpressionSign(expression)
         }
+        invalidateDisplayCache()
         errorMessage = nil
     }
 
@@ -264,102 +264,53 @@ final class CalculatorViewModel {
         self.result = nil
     }
 
-    /// Инвертирует знак простого термина (число, унарный минус+число, процент).
-    /// - Parameter expression: Текущее выражение (не пустое, является простым термином).
-    /// - Returns: Выражение с инвертированным знаком.
-    private func toggleSimpleTermSign(_ expression: String) -> String {
-        if expression.hasPrefix("-") {
-            return String(expression.dropFirst())
-        } else {
-            return "-" + expression
-        }
-    }
-
-    /// Инвертирует знак сложного выражения.
-    ///
-    /// Логика:
-    /// 1. Если выражение обёрнуто в -(выражение) — снимает обёртку.
-    /// 2. Если выражение начинается с "-" и является вычислимым
-    ///    (не заканчивается оператором, нет незакрытых скобок) —
-    ///    вычисляет результат и инвертирует его.
-    /// 3. Если выражение начинается с "-" но не вычислимое —
-    ///    оборачивает в -(выражение).
-    /// 4. Если выражение не начинается с "-" — оборачивает в -(выражение).
-    ///
-    /// - Parameter expression: Текущее выражение (не пустое, не простой термин).
-    /// - Returns: Выражение с инвертированным знаком.
-    private func toggleComplexExpressionSign(_ expression: String) -> String {
-        if let inner = CalculatorEngine.isWrappedNegativeExpression(expression) {
-            return inner
-        }
-
-        if expression.hasPrefix("-") {
-            return negateExpressionWithLeadingMinus(expression)
-        } else {
-            return "-(\(expression))"
-        }
-    }
-
-    private func negateExpressionWithLeadingMinus(_ expression: String) -> String {
-        let trimmed = trimmedExpression
-
-        guard !trimmed.isEmpty, isReadyForEvaluation else {
-            if trimmed == "-" || trimmed == "+" { return "" }
-            return "-(\(expression))"
-        }
-
-        return evaluateAndNegate(expression)
-    }
-
-    private func evaluateAndNegate(_ expression: String) -> String {
-        do {
-            let value = try engine.evaluate(expression)
-            return (-value).description
-        } catch {
-            return "-(\(expression))"
-        }
-    }
-
     // MARK: - Функциональные вычисления (√, x²)
+
+    /// Обобщённая унарная функция над значением дисплея (√, x²).
+    /// Берёт currentDisplayValue, применяет compute, пишет результат в историю
+    /// и состояние, очищает expression. Если compute возвращает nil — состояние
+    /// не меняется (compute сам устанавливает errorMessage).
+    private func applyUnaryFunction(
+        historyExpression: (String) -> String,
+        compute: (Decimal) -> Decimal?
+    ) {
+        clearError()
+
+        guard let value = currentDisplayValue else {
+            errorMessage = localizedString("errors.emptyExpression", comment: "")
+            return
+        }
+
+        guard let newValue = compute(value) else { return }
+
+        let baseExpression = expression.isEmpty ? formatter.format(value) : expression
+        setResultState(value: newValue, historyExpression: historyExpression(baseExpression))
+        expression = ""
+    }
 
     /// Вычисляет квадратный корень из текущего значения на дисплее.
     /// Использует метод Ньютона (Герона) для итеративного вычисления
     /// квадратного корня напрямую через тип Decimal.
     func calculateSquareRoot() {
-        clearError()
-
-        guard let value = currentDisplayValue else {
-            errorMessage = localizedString("errors.emptyExpression", comment: "")
-            return
-        }
-
-        guard value >= 0 else {
-            errorMessage = localizedString("errors.negativeSquareRoot", comment: "")
-            return
-        }
-
-        let sqrtDecimal = CalculatorEngine.newtonSquareRoot(value)
-        let sqrtExpression = "√(" + (expression.isEmpty ? formatter.format(value) : expression) + ")"
-
-        setResultState(value: sqrtDecimal, historyExpression: sqrtExpression)
-        expression = ""
+        applyUnaryFunction(
+            historyExpression: { "√(" + $0 + ")" },
+            compute: { value in
+                guard value >= 0 else {
+                    self.errorMessage = localizedString("errors.negativeSquareRoot", comment: "")
+                    return nil
+                }
+                return CalculatorEngine.newtonSquareRoot(value)
+            }
+        )
     }
 
     /// Возводит текущее значение на дисплее в квадрат.
     /// Использует простую операцию Decimal * Decimal — точная арифметика без преобразования в Double.
     func calculateSquare() {
-        clearError()
-
-        guard let value = currentDisplayValue else {
-            errorMessage = localizedString("errors.emptyExpression", comment: "")
-            return
-        }
-
-        let squared = value * value
-        let squareExpression = "(\(expression.isEmpty ? formatter.format(value) : expression))²"
-
-        setResultState(value: squared, historyExpression: squareExpression)
-        expression = ""
+        applyUnaryFunction(
+            historyExpression: { "(" + $0 + ")²" },
+            compute: { $0 * $0 }
+        )
     }
 
     // MARK: - Memory operations (SRS §39-43)

@@ -42,20 +42,7 @@ public struct Parser: Sendable {
                 }
                 operatorStack.removeLast()
 
-            case .binaryOperator:
-                while let top = operatorStack.last,
-                      top.isOperator,
-                      !top.isLeftParen {
-                    if top.precedenceValue > token.precedenceValue ||
-                        (top.precedenceValue == token.precedenceValue && top.isLeftAssoc) {
-                        output.append(operatorStack.removeLast())
-                    } else {
-                        break
-                    }
-                }
-                operatorStack.append(token)
-
-            case .unaryMinus:
+            case .binaryOperator, .unaryMinus:
                 while let top = operatorStack.last,
                       top.isOperator,
                       !top.isLeftParen {
@@ -69,33 +56,7 @@ public struct Parser: Sendable {
                 operatorStack.append(token)
 
             case .percent:
-                // Относительный %: если на стеке операторов + или -, создаём .percentRelative
-                if let top = operatorStack.last, case .binaryOperator(let op) = top {
-                    if op == .add || op == .subtract {
-                        // Извлекаем оператор из стека без добавления в output
-                        _ = operatorStack.removeLast()
-                        // Извлекаем percentValue (правый операнд, теперь последний)
-                        guard output.count >= 2 else {
-                            throw CalculatorError.invalidExpression("Invalid expression")
-                        }
-                        let percentValueToken = output.removeLast()
-                        guard case .number(let percentValue) = percentValueToken else {
-                            throw CalculatorError.invalidExpression("Invalid expression")
-                        }
-                        // Извлекаем left (левый операнд, теперь последний)
-                        let leftToken = output.removeLast()
-                        // Возвращаем левый операнд в output
-                        output.append(leftToken)
-                        // Создаём токен относительного процента
-                        output.append(.percentRelative(op, percentValue))
-                    } else {
-                        // * или / — абсолютный % (деление на 100), оператор остаётся в стеке
-                        operatorStack.append(token)
-                    }
-                } else {
-                    // Стек пуст, скобка, унарный минус — абсолютный %
-                    operatorStack.append(token)
-                }
+                try handlePercentToken(token, output: &output, operatorStack: &operatorStack)
             }
         }
 
@@ -110,6 +71,45 @@ public struct Parser: Sendable {
         }
 
         return output
+    }
+
+    /// Обрабатывает токен процента.
+    /// Если на вершине стека операторов `+` или `-` — создаёт токен
+    /// `.percentRelative` (относительный процент, например "200+10%"),
+    /// извлекая оператор и правый операнд из соответствующих буферов.
+    /// Иначе — кладёт абсолютный `%` в стек операторов.
+    private func handlePercentToken(
+        _ token: Token,
+        output: inout [Token],
+        operatorStack: inout [Token]
+    ) throws {
+        // Относительный %: если на стеке операторов + или -, создаём .percentRelative
+        if let top = operatorStack.last, case .binaryOperator(let op) = top {
+            if op == .add || op == .subtract {
+                // Извлекаем оператор из стека без добавления в output
+                _ = operatorStack.removeLast()
+                // Извлекаем percentValue (правый операнд, теперь последний)
+                guard output.count >= 2 else {
+                    throw CalculatorError.invalidExpression("Invalid expression")
+                }
+                let percentValueToken = output.removeLast()
+                guard case .number(let percentValue) = percentValueToken else {
+                    throw CalculatorError.invalidExpression("Invalid expression")
+                }
+                // Извлекаем left (левый операнд, теперь последний)
+                let leftToken = output.removeLast()
+                // Возвращаем левый операнд в output
+                output.append(leftToken)
+                // Создаём токен относительного процента
+                output.append(.percentRelative(op, percentValue))
+            } else {
+                // * или / — абсолютный % (деление на 100), оператор остаётся в стеке
+                operatorStack.append(token)
+            }
+        } else {
+            // Стек пуст, скобка, унарный минус — абсолютный %
+            operatorStack.append(token)
+        }
     }
 
     private func buildAST(from rpn: [Token]) throws -> ExpressionNode {

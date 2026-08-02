@@ -57,6 +57,9 @@ struct CalculatorView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
         }
+        .task {
+            await viewModel.loadInitialHistory()
+        }
         .background(CalculatorColors.background)
         .toolbar {
             ToolbarItem(placement: .automatic) {

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /Users/kgate/Work/GateCalc && echo \"=== STRUCTURE ===\" && find . -type f -name \"*.swift\" -not -path \"*/.build/*\" | sort && echo \"\" && echo \"=== LINE COUNTS ===\" && find . -type f -name \"*.swift\" -not -path \"*/.build/*\" -exec wc -l {} \\\\; | sort -rn && echo \"\" && echo \"=== Package.swift ===\" && cat Package.swift)",
+      "Bash(cd /Users/kgate/Work/GateCalc && echo \"=== test func counts ===\" && for f in Tests/Unit/*.swift Tests/UI/*.swift; do echo \"$\\(grep -c 'func test' \"$f\"\\) $f\"; done; echo \"=== localization keys used in code ===\"; grep -rhon 'localizedString\\(\"[^\"]*\"' Sources --include=\"*.swift\" | sed -E 's/.*localizedString\\\\\\(\"\\([^\"]*\\)\".*/\\\\1/' | sort -u > /tmp/used_keys.txt; wc -l /tmp/used_keys.txt; echo \"=== keys defined en ===\"; grep -oE '^\"[^\"]*\"' Sources/Localization/en.lproj/Localizable.strings | tr -d '\"' | sort -u > /tmp/def_keys.txt; wc -l /tmp/def_keys.txt; echo \"=== used but NOT defined \\(excluding dynamic error msgs\\) ===\"; comm -23 /tmp/used_keys.txt /tmp/def_keys.txt)",
+      "Bash(cd /Users/kgate/Work/GateCalc && echo \"=== defined but NOT used ===\"; comm -13 /tmp/used_keys.txt /tmp/def_keys.txt; echo \"=== ru key count vs en ===\"; grep -oE '^\"[^\"]*\"' Sources/Localization/ru.lproj/Localizable.strings | tr -d '\"' | sort -u > /tmp/ru_keys.txt; echo \"en-only:\"; comm -23 /tmp/def_keys.txt /tmp/ru_keys.txt; echo \"ru-only:\"; comm -13 /tmp/def_keys.txt /tmp/ru_keys.txt; echo \"=== build test \\(quick\\) ===\"; swift build 2>&1 | tail -5)"
+    ]
+  }
+}

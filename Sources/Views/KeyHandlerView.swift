@@ -36,12 +36,23 @@ struct KeyHandlerView: NSViewRepresentable {
 @MainActor
 final class KeyHandlerNSView: NSView {
     weak var viewModel: CalculatorViewModel?
-    private nonisolated(unsafe) var windowObserver: NSObjectProtocol?
+    private var windowObserver: NSObjectProtocol?
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         registerWindowObserver()
         makeMeFirstResponder()
+    }
+
+    override func viewWillMove(toWindow newWindow: NSWindow?) {
+        super.viewWillMove(toWindow: newWindow)
+        // Отписка от NotificationCenter при уходе из окна: метод вызывается
+        // на главном потоке (AppKit lifecycle), что позволяет избавиться от
+        // nonisolated(unsafe) и очистки в deinit.
+        if newWindow == nil, let observer = windowObserver {
+            NotificationCenter.default.removeObserver(observer)
+            windowObserver = nil
+        }
     }
 
     private func registerWindowObserver() {
@@ -125,10 +136,4 @@ final class KeyHandlerNSView: NSView {
     }
 
     override var acceptsFirstResponder: Bool { true }
-
-    deinit {
-        if let observer = windowObserver {
-            NotificationCenter.default.removeObserver(observer)
-        }
-    }
 }

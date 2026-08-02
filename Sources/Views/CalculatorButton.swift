@@ -13,7 +13,7 @@ enum CalcButtonType {
 
 // MARK: - Метка кнопки
 
-enum ButtonLabel {
+enum ButtonLabel: Hashable {
     // Стандартный режим
     case digit(String)                    // "0"–"9"
     case decimalSeparator                 // ","
@@ -148,7 +148,7 @@ enum ButtonLabel {
 // MARK: - Спецификация кнопки
 
 struct ButtonSpec: Identifiable {
-    let id = UUID()
+    var id: String { label.accessibilityIdentifierSuffix }
     let label: ButtonLabel
     let type: CalcButtonType
     var isWide: Bool = false   // true для широких кнопок (например, "=")
@@ -215,13 +215,59 @@ struct CalculatorButton: View {
         return spec.accessibilityLabelOverride ?? spec.label.accessibilityDescription
     }
 
+    /// Hint только для кнопок с контекстным действием:
+    /// буфер обмена и кнопки памяти с подсказкой. Для остальных — nil
+    /// (label уже исчерпывающе описывает кнопку, дублирование недопустимо).
+    private var accessibilityHintText: String? {
+        if case .clipboard = spec.label {
+            return spec.clipboardTooltip
+        }
+        if spec.hasMemoryIndicator {
+            return spec.memoryTooltip
+        }
+        return nil
+    }
+
     // MARK: - Визуальные свойства кнопок
+
+    // MARK: - Метрики отображения
+
+    private enum Metrics {
+        /// Закругление углов: операторы / цифры и функции
+        static let cornerRadiusOperator: CGFloat = 16
+        static let cornerRadiusDefault: CGFloat = 12
+        /// Размер и отступ зелёного индикатора памяти
+        static let memoryIndicatorSize: CGFloat = 8
+        static let memoryIndicatorPadding: CGFloat = 6
+        /// Размер, отступ и смещение индикатора буфера обмена
+        static let clipboardIndicatorSize: CGFloat = 6
+        static let clipboardIndicatorPadding: CGFloat = 6
+        static let clipboardIndicatorOffsetX: CGFloat = -2
+        static let clipboardIndicatorOffsetY: CGFloat = -2
+        /// Длительность long-press (секунды)
+        static let longPressDuration: Double = 0.5
+        /// Тултип: шрифт, отступы, скругление, обводка, смещение
+        static let tooltipFontSize: CGFloat = 12
+        static let tooltipPaddingHorizontal: CGFloat = 10
+        static let tooltipPaddingVertical: CGFloat = 6
+        static let tooltipCornerRadius: CGFloat = 6
+        static let tooltipBorderLineWidth: CGFloat = 1
+        static let tooltipOffsetX: CGFloat = 5
+        static let tooltipOffsetY: CGFloat = -14
+        /// Обводка кнопки
+        static let borderLineWidth: CGFloat = 1.0
+        /// Анимация нажатия
+        static let pressScale: CGFloat = 0.93
+        static let pressAnimationDuration: Double = 0.08
+        /// Прозрачность отключённой кнопки
+        static let disabledOpacity: Double = 0.4
+    }
 
     /// Закругление уголков: для операторов — 16, для цифр и функций — 12
     private var buttonCornerRadius: CGFloat {
         switch spec.type {
-        case .operator:  return 16
-        case .digit, .function: return 12
+        case .operator:  return Metrics.cornerRadiusOperator
+        case .digit, .function: return Metrics.cornerRadiusDefault
         }
     }
 
@@ -266,24 +312,38 @@ struct CalculatorButton: View {
             if spec.hasMemoryIndicator {
                 Circle()
                     .fill(Color.green)
-                    .frame(width: 8, height: 8)
-                    .padding(6)
+                    .frame(width: Metrics.memoryIndicatorSize, height: Metrics.memoryIndicatorSize)
+                    .padding(Metrics.memoryIndicatorPadding)
                     .accessibilityHidden(true)
             }
             if spec.hasClipboardIndicator, let color = spec.clipboardIndicatorColor {
                 Circle()
                     .fill(color)
-                    .frame(width: 6, height: 6)
-                    .padding(6)
-                    .offset(x: -2, y: -2)
+                    .frame(width: Metrics.clipboardIndicatorSize, height: Metrics.clipboardIndicatorSize)
+                    .padding(Metrics.clipboardIndicatorPadding)
+                    .offset(x: Metrics.clipboardIndicatorOffsetX, y: Metrics.clipboardIndicatorOffsetY)
                     .accessibilityHidden(true)
             }
         }
     }
 
+// MARK: - Модификатор accessibilityHint для опциональной подсказки
+
+private struct AccessibilityHintModifier: ViewModifier {
+    let hint: String?
+
+    func body(content: Content) -> some View {
+        if let hint {
+            content.accessibilityHint(hint)
+        } else {
+            content
+        }
+    }
+}
+
     /// Long-press жест: визуально переключает C → AC (без вызова clear())
     private var longPressGesture: some Gesture {
-        LongPressGesture(minimumDuration: 0.5)
+        LongPressGesture(minimumDuration: Metrics.longPressDuration)
             .onEnded { _ in
                 if case .clear = spec.label {
                     isClearHolding = true
@@ -323,18 +383,18 @@ struct CalculatorButton: View {
     private var tooltipOverlay: some View {
         if isHovered, let tip = spec.memoryTooltip ?? spec.clipboardTooltip {
             Text(tip)
-                .font(.system(size: 12, weight: .regular))
+                .font(.system(size: Metrics.tooltipFontSize, weight: .regular))
                 .foregroundStyle(Color.primary)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+                .padding(.horizontal, Metrics.tooltipPaddingHorizontal)
+                .padding(.vertical, Metrics.tooltipPaddingVertical)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Metrics.tooltipCornerRadius))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color.gray.opacity(0.5), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: Metrics.tooltipCornerRadius)
+                        .stroke(Color.gray.opacity(0.5), lineWidth: Metrics.tooltipBorderLineWidth)
                 )
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
-                .offset(x: 5, y: -14)
+                .offset(x: Metrics.tooltipOffsetX, y: Metrics.tooltipOffsetY)
         }
     }
 
@@ -354,14 +414,14 @@ struct CalculatorButton: View {
             .overlay {
                 if hasBorder && !spec.isWide {
                     RoundedRectangle(cornerRadius: buttonCornerRadius)
-                        .stroke(borderColor, lineWidth: 1.0)
+                        .stroke(borderColor, lineWidth: Metrics.borderLineWidth)
                 }
             }
             .overlay(alignment: .bottomTrailing) { indicatorsOverlay }
             .frame(width: targetWidth, height: diameter)
-            .scaleEffect(isPressed ? 0.93 : 1.0)
+            .scaleEffect(isPressed ? Metrics.pressScale : 1.0)
             .animation(
-                reduceMotion ? nil : .easeOut(duration: 0.08),
+                reduceMotion ? nil : .easeOut(duration: Metrics.pressAnimationDuration),
                 value: isPressed
             )
             .simultaneousGesture(longPressGesture)
@@ -371,10 +431,10 @@ struct CalculatorButton: View {
             .simultaneousGesture(tapGesture)
             .accessibilityLabel(accessibilityLabelText)
             .accessibilityAddTraits(.isButton)
-            .accessibilityHint(spec.accessibilityLabelOverride ?? spec.label.accessibilityDescription)
             .accessibilityIdentifier("calc_btn_\(spec.label.accessibilityIdentifierSuffix)")
             .accessibilityValue(spec.accessibilityValueOverride ?? "")
-            .opacity(spec.isEnabled ? 1.0 : 0.4)
+            .modifier(AccessibilityHintModifier(hint: accessibilityHintText))
+            .opacity(spec.isEnabled ? 1.0 : Metrics.disabledOpacity)
             .onHover { hovering in isHovered = hovering }
             .overlay(alignment: .topTrailing) { tooltipOverlay }
     }
