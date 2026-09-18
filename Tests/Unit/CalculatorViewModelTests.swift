@@ -202,6 +202,34 @@ final class CalculatorViewModelTests: XCTestCase {
         XCTAssertNotNil(viewModel.errorMessage)
     }
 
+    func testInsertFromClipboard_CommaDecimal_EvaluatesFraction() {
+        let viewModel = createCleanViewModel()
+        viewModel.insertFromClipboard("12,105")
+        XCTAssertEqual(viewModel.expression, "12,105")
+        XCTAssertEqual(viewModel.resultDecimal, Decimal(string: "12.105")!)
+        XCTAssertEqual(viewModel.result, "12,105")
+        XCTAssertTrue(viewModel.hasResult)
+    }
+
+    func testInsertFromClipboard_AfterTrailingOperator_AppendsOperand() {
+        let viewModel = createCleanViewModel()
+        viewModel.appendCharacter("1")
+        viewModel.appendCharacter("2")
+        viewModel.appendCharacter(".")
+        viewModel.appendCharacter("1")
+        viewModel.appendCharacter("0")
+        viewModel.appendCharacter("5")
+        viewModel.appendCharacter("*")
+        XCTAssertEqual(viewModel.expression, "12.105*")
+
+        viewModel.insertFromClipboard("200")
+
+        XCTAssertEqual(viewModel.expression, "12.105*200")
+        XCTAssertNil(viewModel.result)
+        XCTAssertNil(viewModel.resultDecimal)
+        XCTAssertFalse(viewModel.hasResult)
+    }
+
     // MARK: - Tests: handleClipboardAction
 
     func testClipboardAction_EmptyState_PastesFromClipboard() {

@@ -75,8 +75,8 @@ struct TestRunnerMain {
         do { _ = try tokenizer.tokenize("5++3"); check(false, "Tokenizer: 5++3 should throw")
             } catch { check(true, "Double operator throws") }
 
-        let t12 = try! tokenizer.tokenize("1,000,000")
-        if case .number(let v) = t12[0] { checkEqual(v, 1000000, "Thousands: 1,000,000 = 1000000") }
+        let t12 = try! tokenizer.tokenize("12,105")
+        if case .number(let v) = t12[0] { checkEqual(v, Decimal(string: "12.105")!, "Decimal comma: 12,105 = 12.105") }
 
         let t13 = try! tokenizer.tokenize("50%")
         check(t13.count == 2, "Percent: 2 tokens")
@@ -150,15 +150,17 @@ struct TestRunnerMain {
         checkEqual(try! engine.evaluate("37 878,07"), Decimal(string: "37878.07")!,
                      "37878.07=37878.07 (запятая)")
 
-        // Разделители тысяч через запятую (без пробелов)
-        checkEqual(try! engine.evaluate("1,000+2,500"), Decimal(string: "3500")!,
-                     "1000+2500=3500 (запятые-тысячные)")
+        // Одиночные запятые — десятичные разделители
+        checkEqual(try! engine.evaluate("1,000+2,500"), Decimal(string: "3.5")!,
+                     "1,000+2,500=3.5 (десятичные запятые)")
 
         // Существующие тесты не должны сломаться
         checkEqual(try! engine.evaluate("15+16"), 31,
                      "Регрессия: 15+16=31")
-        checkEqual(try! engine.evaluate("1,000,000"), Decimal(string: "1000000")!,
-                     "Регрессия: 1,000,000=1000000")
+        checkEqual(try! engine.evaluate("12,105"), Decimal(string: "12.105")!,
+                     "Регрессия: 12,105=12.105")
+        checkEqual(try! engine.evaluate("12.105"), Decimal(string: "12.105")!,
+                     "Регрессия: 12.105=12.105")
         checkEqual(try! engine.evaluate("3.1415*5"), Decimal(string: "15.7075")!,
                      "Регрессия: 3.1415*5=15.7075")
         checkEqual(try! engine.evaluate("(15+16+17+18)/4"), Decimal(string: "16.5")!,

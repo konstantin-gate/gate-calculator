@@ -22,6 +22,27 @@ mkdir -p "${APP_BUNDLE}/Contents/Resources"
 # Copy executable
 cp "$EXECUTABLE" "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"
 
+# Convert PNG icon to .icns
+ICONSET_DIR=$(mktemp -d)
+ICONSET="${ICONSET_DIR}/AppIcon.iconset"
+mkdir -p "$ICONSET"
+sips -z 16 16     Sources/Resources/app_icon.png --out "${ICONSET}/icon_16x16.png" >/dev/null
+sips -z 32 32     Sources/Resources/app_icon.png --out "${ICONSET}/icon_16x16@2x.png" >/dev/null
+sips -z 32 32     Sources/Resources/app_icon.png --out "${ICONSET}/icon_32x32.png" >/dev/null
+sips -z 64 64     Sources/Resources/app_icon.png --out "${ICONSET}/icon_32x32@2x.png" >/dev/null
+sips -z 128 128   Sources/Resources/app_icon.png --out "${ICONSET}/icon_128x128.png" >/dev/null
+sips -z 256 256   Sources/Resources/app_icon.png --out "${ICONSET}/icon_128x128@2x.png" >/dev/null
+sips -z 256 256   Sources/Resources/app_icon.png --out "${ICONSET}/icon_256x256.png" >/dev/null
+sips -z 512 512   Sources/Resources/app_icon.png --out "${ICONSET}/icon_256x256@2x.png" >/dev/null
+sips -z 512 512   Sources/Resources/app_icon.png --out "${ICONSET}/icon_512x512.png" >/dev/null
+sips -z 1024 1024 Sources/Resources/app_icon.png --out "${ICONSET}/icon_512x512@2x.png" >/dev/null
+iconutil -c icns "$ICONSET" -o "${APP_BUNDLE}/Contents/Resources/AppIcon.icns"
+rm -rf "$ICONSET_DIR"
+
+# Copy localizations
+cp -R Sources/Localization/en.lproj "${APP_BUNDLE}/Contents/Resources/"
+cp -R Sources/Localization/ru.lproj "${APP_BUNDLE}/Contents/Resources/"
+
 # Create Info.plist
 cat > "${APP_BUNDLE}/Contents/Info.plist" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -44,12 +65,12 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" << 'EOF'
     <string>1.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
-    <key>NSMainNibFile</key>
-    <string></string>
     <key>LSUIElement</key>
     <false/>
 </dict>

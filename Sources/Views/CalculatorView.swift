@@ -102,36 +102,36 @@ struct CalculatorView: View {
                 ),
                 ButtonSpec(label: .divide,         type: .operator),
             ])
-            // Ряд 3: %, +/−, √, x², ×
+            // Ряд 3: 7, 8, 9, %, ×
             buttonRow([
-                ButtonSpec(label: .percent,        type: .function),
-                ButtonSpec(label: .plusMinus,      type: .function),
-                ButtonSpec(label: .sqrt,           type: .function),
-                ButtonSpec(label: .square,         type: .function),
-                ButtonSpec(label: .multiply,       type: .operator),
-            ])
-            // Ряд 4: 6, 7, 8, 9, −
-            buttonRow([
-                ButtonSpec(label: .digit("6"),     type: .digit),
                 ButtonSpec(label: .digit("7"),     type: .digit),
                 ButtonSpec(label: .digit("8"),     type: .digit),
                 ButtonSpec(label: .digit("9"),     type: .digit),
-                ButtonSpec(label: .subtract,       type: .operator),
+                ButtonSpec(label: .percent,        type: .function),
+                ButtonSpec(label: .multiply,       type: .operator),
             ])
-            // Ряд 5: 2, 3, 4, 5, +
+            // Ряд 4: 4, 5, 6, +/−, −
             buttonRow([
-                ButtonSpec(label: .digit("2"),     type: .digit),
-                ButtonSpec(label: .digit("3"),     type: .digit),
                 ButtonSpec(label: .digit("4"),     type: .digit),
                 ButtonSpec(label: .digit("5"),     type: .digit),
+                ButtonSpec(label: .digit("6"),     type: .digit),
+                ButtonSpec(label: .plusMinus,      type: .function),
+                ButtonSpec(label: .subtract,       type: .operator),
+            ])
+            // Ряд 5: 1, 2, 3, √, +
+            buttonRow([
+                ButtonSpec(label: .digit("1"),     type: .digit),
+                ButtonSpec(label: .digit("2"),     type: .digit),
+                ButtonSpec(label: .digit("3"),     type: .digit),
+                ButtonSpec(label: .sqrt,           type: .function),
                 ButtonSpec(label: .add,            type: .operator),
             ])
-            // Ряд 6: 0, 1, запятая, = (широкая)
+            // Ряд 6: 0 (широкая, 2 колонки), запятая, x², =
             buttonRow([
-                ButtonSpec(label: .digit("0"),       type: .digit),
-                ButtonSpec(label: .digit("1"),       type: .digit),
+                ButtonSpec(label: .digit("0"),       type: .digit, isWide: true),
                 ButtonSpec(label: .decimalSeparator, type: .digit),
-                ButtonSpec(label: .equals,           type: .operator, isWide: true),
+                ButtonSpec(label: .square,           type: .function),
+                ButtonSpec(label: .equals,           type: .operator),
             ])
         }
     }

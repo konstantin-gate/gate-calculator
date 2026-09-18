@@ -5,3 +5,7 @@ xcuserdata/
 .mimocode
 .opencode
 images
+.idea/
+.agents/
+.postman/
+postman

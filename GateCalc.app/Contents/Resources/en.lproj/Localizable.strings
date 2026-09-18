@@ -1,0 +1,56 @@
+/* English localization */
+
+/* History */
+"history.title" = "History";
+"history.empty.title" = "No History";
+"history.empty.description" = "Calculations will appear here";
+"history.done" = "Done";
+"history.clear" = "Clear";
+
+/* Errors */
+"errors.divisionByZero" = "Division by zero";
+"errors.invalidExpression" = "Invalid expression";
+"errors.missingParenthesis" = "Missing closing parenthesis";
+"errors.extraParenthesis" = "Extra closing parenthesis";
+"errors.doubleOperator" = "Double operator";
+"errors.emptyExpression" = "Empty expression";
+"errors.invalidCharacter" = "Invalid character";
+"errors.invalidNumber" = "Invalid number";
+
+/* Errors (additional) */
+"errors.negativeSquareRoot" = "Square root of negative number";
+"errors.invalidExpressionWithDetail" = "Invalid expression: %@";
+"errors.invalidCharacterWithDetail" = "Invalid character: %@";
+"errors.invalidNumberWithDetail" = "Invalid number: %@";
+
+/* Clipboard */
+"clipboard.copy" = "Copy result";
+"clipboard.paste" = "Paste from clipboard";
+"clipboard.copy.tooltip" = "Copy";
+"clipboard.paste.tooltip" = "Paste";
+
+/* Accessibility buttons */
+"accessibility.divide" = "Divide";
+"accessibility.multiply" = "Multiply";
+"accessibility.subtract" = "Subtract";
+"accessibility.add" = "Add";
+"accessibility.equals" = "Equals";
+"accessibility.clear" = "Clear";
+"accessibility.backspace" = "Delete last character";
+"accessibility.plusMinus" = "Toggle sign";
+"accessibility.percent" = "Percent";
+"accessibility.decimalSeparator" = "Decimal comma";
+"accessibility.mc" = "Memory clear";
+"accessibility.mPlus" = "Add to memory";
+"accessibility.mMinus" = "Subtract from memory";
+"accessibility.mR" = "Memory recall";
+"accessibility.clearAll" = "Clear all";
+"accessibility.sqrt" = "Square root";
+"accessibility.square" = "Square";
+"accessibility.clipboard" = "Clipboard";
+
+/* Display VoiceOver */
+"accessibility.error.prefix" = "Error:";
+"accessibility.result.prefix" = "Result:";
+"accessibility.zero" = "Zero";
+"accessibility.expression.prefix" = "Expression:";

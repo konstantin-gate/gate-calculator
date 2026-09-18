@@ -139,12 +139,23 @@ final class TokenizerTests: XCTestCase {
         XCTAssertThrowsError(try tokenizer.tokenize("15+a"))
     }
 
-    func testTokenize_ThousandsSeparator() throws {
+    func testTokenize_CommaAsDecimalSeparator() throws {
         let tokenizer = Tokenizer()
-        let tokens = try tokenizer.tokenize("1,000,000")
+        let tokens = try tokenizer.tokenize("12,105")
         XCTAssertEqual(tokens.count, 1)
         if case .number(let v) = tokens[0] {
-            XCTAssertEqual(v, 1000000)
+            XCTAssertEqual(v, Decimal(string: "12.105")!)
+        } else {
+            XCTFail("Expected number token")
+        }
+    }
+
+    func testTokenize_DotAsDecimalSeparator() throws {
+        let tokenizer = Tokenizer()
+        let tokens = try tokenizer.tokenize("12.105")
+        XCTAssertEqual(tokens.count, 1)
+        if case .number(let v) = tokens[0] {
+            XCTAssertEqual(v, Decimal(string: "12.105")!)
         } else {
             XCTFail("Expected number token")
         }

@@ -349,6 +349,15 @@ final class CalculatorViewModel {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
+        if !expression.isEmpty && CalculatorEngine.isTrailingOperator(expression) {
+            // Незавершённое выражение с конечным оператором: дописать операнд без вычисления.
+            clearError()
+            expression += trimmed
+            invalidateDisplayCache()
+            clearResultState()
+            return
+        }
+
         clearCurrentInput()
 
         do {

@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Преобразует строку выражения в последовательность токенов (`[Token]`).
 /// Выполняет предварительную обработку: удаление "=", обработка переносов строк,
-/// нормализация разделителей тысяч/десятичных запятых, проверка на NaN/Infinity.
+/// удаление пробелов-разделителей тысяч, нормализация десятичной запятой в точку, проверка на NaN/Infinity.
 public struct Tokenizer: Sendable {
 
     /// Создаёт новый экземпляр токенизатора.
@@ -89,75 +89,9 @@ public struct Tokenizer: Sendable {
         return result
     }
 
-    // Описывает обработку числового блока с запятыми
-    private struct NumericRunCommas {
-        let commaIndices: [String.Index]  // позиции запятых в блоке (в порядке обхода)
-        let allHaveThreeDigits: Bool      // все запятые — разделители тысяч (по 3 цифры после каждой)
-    }
-
-    // Собирает позиции запятых и проверяет, являются ли все из них
-    // разделителями тысяч: после каждой запятой ровно 3 цифры до следующей
-    // запятой или конца блока.
-    private func analyzeNumericRunCommas(_ numStr: String) -> NumericRunCommas {
-        var commaIndices: [String.Index] = []
-        for idx in numStr.indices where numStr[idx] == "," {
-            commaIndices.append(idx)
-        }
-
-        var allHaveThreeDigits = true
-        var boundary = numStr.endIndex
-        for commaIdx in commaIndices.reversed() {
-            let afterIdx = numStr.index(after: commaIdx)
-            let count = numStr.distance(from: afterIdx, to: boundary)
-            if count != 3 {
-                allHaveThreeDigits = false
-                break
-            }
-            boundary = commaIdx
-        }
-
-        return NumericRunCommas(commaIndices: commaIndices, allHaveThreeDigits: allHaveThreeDigits)
-    }
-
-    // Обрабатывает запятые: десятичные → точки, разделители тысяч → удаление
+    // Нормализует каждую запятую во внутренний десятичный разделитель ".".
     private func convertDecimalCommas(_ str: String) -> String {
-        var result = ""
-        var i = str.startIndex
-
-        while i < str.endIndex {
-            let c = str[i]
-
-            if !c.isNumber && c != "," {
-                result.append(c)
-                i = str.index(after: i)
-                continue
-            }
-
-            var numStr = ""
-            while i < str.endIndex && (str[i].isNumber || str[i] == ",") {
-                numStr.append(str[i])
-                i = str.index(after: i)
-            }
-
-            if let lastCommaIdx = numStr.lastIndex(of: ",") {
-                let analysis = analyzeNumericRunCommas(numStr)
-
-                if analysis.allHaveThreeDigits {
-                    var cleanedNum = String(numStr)
-                    cleanedNum.removeAll(where: { $0 == "," })
-                    result.append(cleanedNum)
-                } else {
-                    var convertedNum = String(numStr)
-                    convertedNum.remove(at: lastCommaIdx)
-                    convertedNum.insert(".", at: lastCommaIdx)
-                    result.append(convertedNum)
-                }
-            } else {
-                result.append(numStr)
-            }
-        }
-
-        return result
+        return str.replacingOccurrences(of: ",", with: ".")
     }
 
     private func preprocess(_ input: String) throws -> String {
@@ -179,7 +113,7 @@ public struct Tokenizer: Sendable {
         // Удалить пробелы между цифрами (разделители тысяч в формате "37 878")
         result = removeThousandsSeparatorSpaces(result)
 
-        // Обработать запятые: десятичные → точки, разделители тысяч → удаление
+        // Нормализовать каждую запятую во внутренний десятичный разделитель "."
         result = convertDecimalCommas(result)
 
         return result.trimmingCharacters(in: .whitespaces)

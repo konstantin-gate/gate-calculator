@@ -151,7 +151,7 @@ struct ButtonSpec: Identifiable {
     var id: String { label.accessibilityIdentifierSuffix }
     let label: ButtonLabel
     let type: CalcButtonType
-    var isWide: Bool = false   // true для широких кнопок (например, "=")
+    var isWide: Bool = false   // true для широкой кнопки "0" (2 колонки)
     var isEnabled: Bool = true
     var hasMemoryIndicator: Bool = false
     var memoryTooltip: String? = nil
@@ -412,7 +412,7 @@ private struct AccessibilityHintModifier: ViewModifier {
             )
             .clipShape(RoundedRectangle(cornerRadius: buttonCornerRadius))
             .overlay {
-                if hasBorder && !spec.isWide {
+                if hasBorder {
                     RoundedRectangle(cornerRadius: buttonCornerRadius)
                         .stroke(borderColor, lineWidth: Metrics.borderLineWidth)
                 }

@@ -201,9 +201,14 @@ final class CalculatorEngineTests: XCTestCase {
         XCTAssertEqual(result, 1500)
     }
 
-    func testSpecialCase_ThousandsSeparator() throws {
-        let result = try engine.evaluate("1,000,000")
-        XCTAssertEqual(result, 1000000)
+    func testSpecialCase_CommaAsDecimalSeparator() throws {
+        let result = try engine.evaluate("12,105")
+        XCTAssertEqual(result, Decimal(string: "12.105")!)
+    }
+
+    func testSpecialCase_DotAsDecimalSeparator() throws {
+        let result = try engine.evaluate("12.105")
+        XCTAssertEqual(result, Decimal(string: "12.105")!)
     }
 
     func testSpecialCase_EqualsAtEnd() throws {
