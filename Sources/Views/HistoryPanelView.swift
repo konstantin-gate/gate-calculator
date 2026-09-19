@@ -3,6 +3,7 @@ import SwiftUI
 struct HistoryPanelView: View {
     @Bindable var viewModel: CalculatorViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.calculatorTheme) private var theme
 
     var body: some View {
         NavigationStack {
@@ -25,7 +26,7 @@ struct HistoryPanelView: View {
 
                             Text(entry.timestamp, style: .time)
                                 .font(.system(size: 12))
-                                .foregroundStyle(CalculatorColors.displayTextSecondary)
+                                .foregroundStyle(theme.displayTextSecondary)
 
                             Text("= \(entry.formattedResult)")
                                 .font(.system(size: 16, weight: .medium))

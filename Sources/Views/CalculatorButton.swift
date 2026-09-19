@@ -181,21 +181,22 @@ struct CalculatorButton: View {
     @State private var longPressConsumed = false // true = long-press обработан, тап пропускается
     @State private var isHovered = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.calculatorTheme) private var theme
 
     // MARK: Цвета
 
     private var backgroundColor: Color {
         switch spec.type {
-        case .digit:     return CalculatorColors.buttonDigit
-        case .operator:  return CalculatorColors.buttonOperator
-        case .function:  return CalculatorColors.buttonFunction
+        case .digit:     return theme.buttonDigit
+        case .operator:  return theme.buttonOperator
+        case .function:  return theme.buttonFunction
         }
     }
 
     private var foregroundColor: Color {
         switch spec.type {
-        case .operator:  return CalculatorColors.buttonTextOperator
-        default:         return CalculatorColors.buttonTextPrimary
+        case .operator:  return theme.buttonTextOperator
+        default:         return theme.buttonTextPrimary
         }
     }
 
@@ -279,9 +280,9 @@ struct CalculatorButton: View {
         }
     }
 
-    /// Цвет обводки: системный серый, адаптируется к светлой/тёмной теме
+    /// Barva obrysu: v tmavém tématu jemný bílý obrys, ve světlém systémová šedá.
     private var borderColor: Color {
-        return Color.secondary
+        return theme.buttonBorder
     }
 
     // MARK: - Вынесенные компоненты body
@@ -407,7 +408,7 @@ private struct AccessibilityHintModifier: ViewModifier {
             .frame(width: targetWidth, height: diameter)
             .background(
                 isPressed
-                    ? CalculatorColors.pressedColor(for: backgroundColor)
+                    ? CalculatorTheme.pressedColor(for: backgroundColor)
                     : backgroundColor
             )
             .clipShape(RoundedRectangle(cornerRadius: buttonCornerRadius))

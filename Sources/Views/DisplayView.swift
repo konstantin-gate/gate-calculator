@@ -64,6 +64,7 @@ struct DisplayView: View {
     @State private var resultOpacity: Double = 1.0
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.calculatorTheme) private var theme
 
     var body: some View {
         VStack(alignment: .trailing, spacing: Self.vstackSpacing) {
@@ -94,7 +95,7 @@ struct DisplayView: View {
         if !expression.isEmpty && result == nil && errorMessage == nil {
             Text(formattedExpression)
                 .font(.system(size: Self.fontSizeExpression, weight: .regular))
-                .foregroundStyle(CalculatorColors.displayTextSecondary)
+                .foregroundStyle(theme.displayTextSecondary)
                 .lineLimit(2)
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -109,7 +110,7 @@ struct DisplayView: View {
         if let error = errorMessage {
             Text(error)
                 .font(.system(size: Self.fontSizeError, weight: .regular))
-                .foregroundStyle(CalculatorColors.errorText)
+                .foregroundStyle(theme.errorText)
                 .lineLimit(2)
                 .multilineTextAlignment(.trailing)
                 .minimumScaleFactor(Self.errorMinimumScaleFactor)
@@ -143,7 +144,7 @@ struct DisplayView: View {
         let mainText = result ?? (expression.isEmpty ? "0" : expression)
         Text(mainText)
             .font(adaptiveFont(for: mainText))
-            .foregroundStyle(CalculatorColors.displayTextPrimary)
+            .foregroundStyle(theme.displayTextPrimary)
             .lineLimit(1)
             .minimumScaleFactor(Self.mainMinimumScaleFactor)
             .truncationMode(.middle)

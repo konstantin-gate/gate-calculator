@@ -29,6 +29,10 @@
 "clipboard.copy.tooltip" = "Copy";
 "clipboard.paste.tooltip" = "Paste";
 
+/* Theme */
+"theme.switchToDark" = "Switch to dark theme";
+"theme.switchToLight" = "Switch to light theme";
+
 /* Accessibility buttons */
 "accessibility.divide" = "Divide";
 "accessibility.multiply" = "Multiply";

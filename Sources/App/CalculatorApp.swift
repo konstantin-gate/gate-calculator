@@ -16,7 +16,6 @@ struct CalculatorApp: App {
     var body: some Scene {
         WindowGroup {
             CalculatorContentView(viewModel: viewModel)
-                .preferredColorScheme(nil)
         }
         .windowStyle(.titleBar)
         .windowResizability(.contentSize)
@@ -30,13 +29,17 @@ struct CalculatorApp: App {
 struct CalculatorContentView: View {
     @Bindable var viewModel: CalculatorViewModel  // @Observable
     @State private var showHistory = false
+    @AppStorage(CalculatorTheme.userDefaultsKey) private var isDarkTheme = false
 
     var body: some View {
-        CalculatorView(viewModel: viewModel, showHistory: $showHistory)
+        CalculatorView(viewModel: viewModel, showHistory: $showHistory, isDarkTheme: $isDarkTheme)
+            .environment(\.calculatorTheme, CalculatorTheme(isDark: isDarkTheme))
             .background(
                 KeyHandlerView(viewModel: viewModel)
                     .frame(width: 0, height: 0)
                     .allowsHitTesting(false)
             )
+            .background(VisualEffectBackground(isTranslucent: isDarkTheme).ignoresSafeArea())
+            .preferredColorScheme(isDarkTheme ? .dark : .light)
     }
 }

@@ -6,6 +6,9 @@ struct CalculatorView: View {
 
     @Bindable var viewModel: CalculatorViewModel
     @Binding var showHistory: Bool
+    @Binding var isDarkTheme: Bool
+
+    @Environment(\.calculatorTheme) private var theme
 
     private enum LayoutMetrics {
         static let buttonDiameter: CGFloat = 60
@@ -32,12 +35,19 @@ struct CalculatorView: View {
                 ? localizedString("clipboard.paste", comment: "")
                 : localizedString("clipboard.copy", comment: ""),
             hasClipboardIndicator: viewModel.hasResult,
-            clipboardIndicatorColor: CalculatorColors.buttonOperator,
+            clipboardIndicatorColor: theme.buttonOperator,
             clipboardTooltip: isPasteMode
                 ? localizedString("clipboard.paste.tooltip", comment: "")
                 : localizedString("clipboard.copy.tooltip", comment: ""),
             clipboardIndicatorBorderColor: nil,
         )
+    }
+
+    /// Lokalizovaný popis akce přepínače tématu.
+    private var themeButtonTitle: String {
+        isDarkTheme
+            ? localizedString("theme.switchToLight", comment: "")
+            : localizedString("theme.switchToDark", comment: "")
     }
 
     var body: some View {
@@ -60,8 +70,15 @@ struct CalculatorView: View {
         .task {
             await viewModel.loadInitialHistory()
         }
-        .background(CalculatorColors.background)
+        .background(theme.background)
         .toolbar {
+            ToolbarItem(placement: .automatic) {
+                Button { isDarkTheme.toggle() } label: {
+                    Image(systemName: isDarkTheme ? "sun.max" : "moon")
+                }
+                .help(themeButtonTitle)
+                .accessibilityLabel(themeButtonTitle)
+            }
             ToolbarItem(placement: .automatic) {
                 Button { showHistory = true } label: {
                     Image(systemName: "clock")
@@ -72,6 +89,8 @@ struct CalculatorView: View {
         }
         .sheet(isPresented: $showHistory) {
             HistoryPanelView(viewModel: viewModel)
+                // Prostředí panelu historie nedědí zvolené barevné schéma, proto je nastaveno explicitně.
+                .environment(\.colorScheme, isDarkTheme ? .dark : .light)
                 .frame(width: 340, height: 500)
         }
     }

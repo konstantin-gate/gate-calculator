@@ -4,13 +4,14 @@ set -e
 APP_NAME="GateCalc"
 BUILD_DIR=".build/release"
 EXECUTABLE="$BUILD_DIR/CalculatorApp"
-APP_BUNDLE="${APP_NAME}.app"
+INSTALL_DIR="/Applications"
+APP_BUNDLE="${INSTALL_DIR}/${APP_NAME}.app"
 
 echo "=== Building ${APP_NAME} ==="
 swift build -c release
 
 echo ""
-echo "=== Creating ${APP_BUNDLE} ==="
+echo "=== Installing ${APP_BUNDLE} ==="
 
 # Clean previous build
 rm -rf "$APP_BUNDLE"
@@ -82,5 +83,5 @@ chmod +x "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"
 
 echo ""
 echo "=== Build complete! ==="
-echo "Launch with: open ./${APP_BUNDLE}"
+echo "Launch with: open ${APP_BUNDLE}"
 echo "Or double-click in Finder: ${APP_BUNDLE}"
